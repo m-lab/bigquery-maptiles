@@ -6,7 +6,7 @@ Build container:
 
 Generate input data:
 
-    docker run -e PROJECT=mlab-sandbox -v $PWD:/mlab-tiles \
+    docker run -e PROJECT=mlab-sandbox -v $PWD:/maptiles \
         -v ~/.config/gcloud:/root/.config/gcloud -it bigquery-maptiles \
         ./prep-geojson-input.sh mlab-sandbox
 
@@ -21,17 +21,17 @@ NOTE: may not be needed if served from an iframe.
 * set defacl on bucket:
 
   ```
-  $ gsutil defacl set public-read gs://soltesz-mlab-sandbox/
+  $ gsutil defacl set public-read gs://bigquery-maptiles-mlab-sandbox/
   ```
 
 * set cors policy on bucket, so requests evaluate `Access-Control-Allow-Origin`
   headers correctly.
 
   ```
-  $ gsutil cors set cors.json  gs://soltesz-mlab-sandbox
+  $ gsutil cors set cors.json  gs://bigquery-maptiles-mlab-sandbox
   ```
 
-  `cors.json` contains, a project-specific origin:
+  `cors.json` contains, a project-specific origin (origin URLs are examples):
   ```
   [
     {
