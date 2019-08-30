@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>M-Lab Paris Traceroutes</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+
+        .map-overlay {
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id='map'></div>
+
+<div class='map-overlay top'>
+    <div class='map-overlay-inner'>
+        <!-- TODO: add legend for rates and colors -->
+    </div>
+</div>
+
+<script>
+
+/* MAPBOX DATA */
+
+mapboxgl.accessToken = 'pk.eyJ1IjoibmV3YW1lcmljYSIsImEiOiIyM3ZnYUtrIn0.57fFgg_iM7S1wLH2GQC71g';
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/newamerica/cjwyjqw3q4dej1cn3qirrgvnt',
+    zoom: 1.5,
+    center: [0, 0]
+});
+
+map.on('load', function () {
+
+    map.addLayer({
+        "id": "one_day_mlab",
+        "type": "circle",
+        "source" :{
+            type: "vector",
+            tiles:[
+                "https://storage.googleapis.com/soltesz-mlab-sandbox/one_day/{z}/{x}/{y}.pbf"
+            ]
+        },
+        "source-layer": "one_day",
+        'paint': {
+            // make circles larger as the user zooms from z12 to z22
+            'circle-radius': 2,
+            // color circles by ethnicity, using a match expression
+            // https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-match
+            'circle-color': [
+                'interpolate',
+                ['linear'],
+                ['get', 'download_Mbps'],
+                  0, '#bd0026',
+                  1, '#fd8d3c',
+                  5, '#ffffb2',
+                 10, '#d9f0a3',
+                 50, '#78c679',
+                100, '#006837'
+                ]
+        }
+    });
+});
+</script>
+
+</body>
+</html>
