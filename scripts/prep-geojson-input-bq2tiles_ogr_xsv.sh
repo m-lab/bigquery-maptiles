@@ -52,15 +52,18 @@ $SCRIPTS/infer_csvt_schema.sh nc_counties_*.csv > schema.csvt
 echo nc_counties_*.csv | xargs -n1 -P4 $SCRIPTS/csv_to_geojson.sh 
 
 # Let tippecanoe read all the geojson files into one layer.
-tippecanoe -e maptiles/nc_counties -f -l nc_counties *.geojson -z6 \
+tippecanoe -e /maptiles/nc_counties -f -l nc_counties *.geojson -z6 \
     --simplification=10 \
     --detect-shared-borders \
     --coalesce-densest-as-needed \
     --no-tile-compression
 
 #upload to cloud storage box
-#gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-#  cp -r maptiles/* gs://bigquery-maptiles-${PROJECT}/
+gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+  cp -r /maptiles/nc_counties/* gs://bigquery-maptiles-${PROJECT}/maptiles/
+
+gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+  cp -r /maptiles/example.html gs://bigquery-maptiles-${PROJECT}/example.html
 
 # NOTE: if the html and tiles are served from different domains we'll need to
 # apply a CORS policy to GCS.

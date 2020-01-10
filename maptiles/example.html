@@ -3,7 +3,7 @@
 
 <head>
     <meta charset='utf-8' />
-    <title>M-Lab Paris Traceroutes</title>
+    <title>M-Lab Vector Tiles Example</title>
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js'></script>
     <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.css' rel='stylesheet' />
@@ -55,17 +55,17 @@
         map.on('load', function () {
 
             map.addLayer({
-                "id": "one_day_mlab",
-                "type": "fill",
+                "id": "mlab",
+                "type": "line",
                 "source": {
                     type: "vector",
                     tiles: [
-                        "http://localhost:8000/maptiles.nc_counties/{z}/{x}/{y}.pbf"
+                        new URL("/maptiles/", window.location) + "{z}/{x}/{y}.pbf"
                     ]
                 },
                 "source-layer": "nc_counties",
                 "paint": {
-                    'fill-color': '#FF0000',
+                    'line-color': '#FF0000',
                 }
             });
         });
