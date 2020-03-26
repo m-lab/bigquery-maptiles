@@ -3,67 +3,85 @@
 set -eux
 
 PROJECT="${1:?Please provide a GCP project for tile upload}"
-TABLE="critzo.nc_counties"
+USERNAME="critzo"
+TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
-QUERIES="${QUERIES:-/maptiles}"
-SCRIPTS="${SCRIPTS:-/maptiles}"
-SCHEMAS="${SCHEMAS:-/maptiles}"
+PUB_LOC="bigquery-maptiles-${PROJECT}"
 
-# TODO: replace use of bq with a custom Go binary that runs the query and
-# outputs the right format. Also open an HTTP port for Cloud Run.
+declare -a query_jobs=("us_counties")
 
-# Make a temporary table using a schema definition based on the expected query output fields 
-bq mk --table --expiration 3600 --description "temp table for bq2maptiles process" \
-	"${QUALIFIED_TABLE}" "${SCHEMAS}"/us_counties_spjoin.json
+for val in ${query_jobs[@]}; do
+  RESULT_NAME="$val"
+  SCHEMA="${RESULT_NAME}.json"
+  QUERY="${RESULT_NAME}.sql"
+  GCS_STORAGE="${RESULT_NAME}_temp"
 
-# Run bq query with generous row limit. Write results to temp table created above.
-# By default, bq fetches the query results to display in the shell, consuming a lot of memory.
-# Use --nosync to "fire-and-forget", then implement our own wait loop to defer the next command
-# until the table is populated.
-JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
-	--allow_large_results --destination_table "${QUALIFIED_TABLE}" \
-    --replace --use_legacy_sql=false --max_rows=4000000 "$(cat "${QUERIES}/query-bqsj.sql")")
-JOB_ID="${JOB_ID#Successfully started query }"
+  # TODO: replace use of bq with a custom Go binary that runs the query and
+  # outputs the right format. Also open an HTTP port for Cloud Run.
 
-until [ DONE == $(bq --format json show --job "${JOB_ID}" | jq -r '.status.state') ]
-do
-  sleep 30
-done 
+  # Make a temporary table using a schema definition based on the
+  # expected query output fields.
 
-# Generate CSV files; expected to include geometry info in WKT format.
-bq extract --destination_format CSV "${QUALIFIED_TABLE}" \
-    gs://bigquery-maptiles-mlab-sandbox/csv/us_counties_*.csv
+  bq mk --table --expiration 3600 --description "temp table to store intermediate results before automated export" \
+    "${QUALIFIED_TABLE}" "schemas/${SCHEMA}"
 
-# Fetch the CSV files that were just exported.
-gsutil -m cp gs://bigquery-maptiles-mlab-sandbox/csv/us_counties_*.csv ./
+  # Run bq query with generous row limit. Write results to temp table created above.
+  # By default, bq fetches the query results to display in the shell, consuming a lot of memory.
+  # Use --nosync to "fire-and-forget", then implement our own wait loop to defer the next command
+  # until the table is populated.
 
-#Cleanup the files on GCS because we don't need them there anymore.
-# gsutil rm gs://bigquery-maptiles-mlab-sandbox/csv/nc_counties_*
+  JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
+    --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
+    --replace --use_legacy_sql=false --max_rows=4000000 \
+    "$(cat "queries/${QUERY}")")
 
-# ogr2ogr requires a schema file to know which csv column represents
-# the geometry. We pass all filenames to the inference script, but
-# it only reads the first one, since the schema should be consistent
-# for all of them.
-$SCRIPTS/infer_csvt_schema.sh us_counties_*.csv > schema.csvt
+  JOB_ID="${JOB_ID#Successfully started query }"
 
-# Use xargs to convert all the csv files to geojson individually, in
-# parallel. We will aggregate them in the next step.  See csv_to_geojson
-# script for ogr2ogr args.
-echo us_counties_*.csv | xargs -n1 -P4 $SCRIPTS/csv_to_geojson.sh 
+  until [ DONE == $(bq --format json show --job "${JOB_ID}" | jq -r '.status.state') ]
+  do
+    sleep 30
+  done
 
-# Let tippecanoe read all the geojson files into one layer.
-tippecanoe -e /maptiles/us_counties -f -l us_counties *.geojson -z6 \
-    --simplification=10 \
-    --detect-shared-borders \
-    --coalesce-densest-as-needed \
-    --no-tile-compression
+  # create a temprary GCS Storage Bucket
+  gsutil mb gs://${GCS_STORAGE}
 
-#upload to cloud storage box
-gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-  cp -r /maptiles/us_counties/* gs://bigquery-maptiles-${PROJECT}/maptiles/
+  # Generate CSV files; expected to include geometry info in WKT format.
+  bq extract --destination_format CSV "${QUALIFIED_TABLE}" \
+      gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv
 
-gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-  cp -r /maptiles/example.html gs://bigquery-maptiles-${PROJECT}/example.html
+  # Fetch the CSV files that were just exported.
+  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv ./
 
-# NOTE: if the html and tiles are served from different domains we'll need to
-# apply a CORS policy to GCS.
+  # Cleanup the files on GCS because we don't need them there anymore.
+  gsutil rm -r gs://${GCS_STORAGE}
+  bq rm -f ${QUALIFIED_TABLE}
+
+  # ogr2ogr requires a schema file to know which csv column represents
+  # the geometry. We pass all filenames to the inference script, but
+  # it only reads the first one, since the schema should be consistent
+  # for all of them.
+  scripts/infer_csvt_schema.sh ${RESULT_NAME}_*.csv > schema.csvt
+
+  # Use xargs to convert all the csv files to geojson individually, in
+  # parallel. We will aggregate them in the next step.  See csv_to_geojson
+  # script for ogr2ogr args.
+  echo ${RESULT_NAME}_*.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
+
+  # Let tippecanoe read all the geojson files into one layer.
+  tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -z6 \
+      --simplification=10 \
+      --detect-shared-borders \
+      --coalesce-densest-as-needed \
+      --no-tile-compression
+
+  # Upload to cloud storage publishing location
+  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+    cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/maptiles/
+
+  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+    cp -r ./maptiles/example.html gs://bigquery-maptiles-${PROJECT}/example.html
+
+  # NOTE: if the html and tiles are served from different domains we'll need to
+  # apply a CORS policy to GCS.
+
+done

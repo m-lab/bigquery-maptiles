@@ -11,9 +11,19 @@
   },
   {
     "mode": "NULLABLE",
-    "name": "year_month",
+    "name": "year",
     "type": "STRING"
   },
+  {
+    "mode": "NULLABLE",
+    "name": "month",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "week",
+    "type": "STRING"
+  },  
   {
     "mode": "NULLABLE",
     "name": "MIN_download_Mbps",
@@ -91,7 +101,7 @@
   },
   {
     "mode": "NULLABLE",
-    "name": "geoid",
+    "name": "geo_id",
     "type": "STRING"
   }
 ]
