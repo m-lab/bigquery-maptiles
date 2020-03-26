@@ -1,6 +1,6 @@
 # Build stage: runtime_packages. Share the results of apt-get update across the dev/production images.
 FROM ubuntu:19.04 AS runtime_packages
-RUN apt-get update && apt-get install -y python gdal-bin jq libsqlite3-0 zlib1g
+RUN apt-get update && apt-get install -y python gdal-bin jq libsqlite3-0 zlib1g bash
 
 # Build stage: build_environment. Sources and build tools not needed for the ultimate production image.
 FROM runtime_packages AS build_environment
@@ -40,5 +40,7 @@ RUN gcloud config set project measurement-lab
 RUN bq --headless --project_id measurement-lab ls fake-dataset &> /dev/null || :
 
 # Copy scripts to generate maptiles.
-COPY  maptiles queries schemas scripts templates /maptiles/
+COPY maptiles queries/ schemas/ scripts/ templates/ /maptiles/
 WORKDIR /maptiles
+
+CMD ["./prep-geojson-input-bq2tiles_ogr_xsv.sh"]

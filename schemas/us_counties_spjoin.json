@@ -1,0 +1,97 @@
+[
+  {
+    "mode": "NULLABLE",
+    "name": "county_geoid",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "county_name",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "year_month",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "MIN_download_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "LOWER_QUARTILE_download_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "MED_download_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "UPPER_QUARTILE_download_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "MAX_download_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "AVG_download_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "MED_min_rtt",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "MIN_upload_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "LOWER_QUARTILE_upload_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "MED_upload_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "UPPER_QUARTILE_upload_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "MAX_upload_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "AVG_upload_Mbps",
+    "type": "FLOAT"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "name",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "WKT",
+    "type": "GEOGRAPHY"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "geoid",
+    "type": "STRING"
+  }
+]

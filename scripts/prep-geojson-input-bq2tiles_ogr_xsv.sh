@@ -3,7 +3,7 @@
 set -eux
 
 PROJECT="${1:?Please provide a GCP project for tile upload}"
-TABLE="georgia.nc_counties"
+TABLE="critzo.nc_counties"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 QUERIES="${QUERIES:-/maptiles}"
 SCRIPTS="${SCRIPTS:-/maptiles}"
@@ -14,7 +14,7 @@ SCHEMAS="${SCHEMAS:-/maptiles}"
 
 # Make a temporary table using a schema definition based on the expected query output fields 
 bq mk --table --expiration 3600 --description "temp table for bq2maptiles process" \
-	"${QUALIFIED_TABLE}" "${SCHEMAS}"/nc_counties_spjoin.json
+	"${QUALIFIED_TABLE}" "${SCHEMAS}"/us_counties_spjoin.json
 
 # Run bq query with generous row limit. Write results to temp table created above.
 # By default, bq fetches the query results to display in the shell, consuming a lot of memory.
@@ -32,10 +32,10 @@ done
 
 # Generate CSV files; expected to include geometry info in WKT format.
 bq extract --destination_format CSV "${QUALIFIED_TABLE}" \
-    gs://bigquery-maptiles-mlab-sandbox/csv/nc_counties_*.csv
+    gs://bigquery-maptiles-mlab-sandbox/csv/us_counties_*.csv
 
 # Fetch the CSV files that were just exported.
-gsutil -m cp gs://bigquery-maptiles-mlab-sandbox/csv/nc_counties_*.csv ./
+gsutil -m cp gs://bigquery-maptiles-mlab-sandbox/csv/us_counties_*.csv ./
 
 #Cleanup the files on GCS because we don't need them there anymore.
 # gsutil rm gs://bigquery-maptiles-mlab-sandbox/csv/nc_counties_*
@@ -44,15 +44,15 @@ gsutil -m cp gs://bigquery-maptiles-mlab-sandbox/csv/nc_counties_*.csv ./
 # the geometry. We pass all filenames to the inference script, but
 # it only reads the first one, since the schema should be consistent
 # for all of them.
-$SCRIPTS/infer_csvt_schema.sh nc_counties_*.csv > schema.csvt
+$SCRIPTS/infer_csvt_schema.sh us_counties_*.csv > schema.csvt
 
 # Use xargs to convert all the csv files to geojson individually, in
 # parallel. We will aggregate them in the next step.  See csv_to_geojson
 # script for ogr2ogr args.
-echo nc_counties_*.csv | xargs -n1 -P4 $SCRIPTS/csv_to_geojson.sh 
+echo us_counties_*.csv | xargs -n1 -P4 $SCRIPTS/csv_to_geojson.sh 
 
 # Let tippecanoe read all the geojson files into one layer.
-tippecanoe -e /maptiles/nc_counties -f -l nc_counties *.geojson -z6 \
+tippecanoe -e /maptiles/us_counties -f -l us_counties *.geojson -z6 \
     --simplification=10 \
     --detect-shared-borders \
     --coalesce-densest-as-needed \
@@ -60,7 +60,7 @@ tippecanoe -e /maptiles/nc_counties -f -l nc_counties *.geojson -z6 \
 
 #upload to cloud storage box
 gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-  cp -r /maptiles/nc_counties/* gs://bigquery-maptiles-${PROJECT}/maptiles/
+  cp -r /maptiles/us_counties/* gs://bigquery-maptiles-${PROJECT}/maptiles/
 
 gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
   cp -r /maptiles/example.html gs://bigquery-maptiles-${PROJECT}/example.html
