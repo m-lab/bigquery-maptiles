@@ -3,7 +3,7 @@
 CSV=${1?Please specify a csv file name}
 CSVT="${CSV/csv/csvt}"
 GEOJSON="${CSV/csv/geojson}"
-SCHEMA="${CSV/csv/schema.csvt}"
+SCHEMA=schema.csvt
 
 if ! [ -f "${SCHEMA}" ] 
 then 

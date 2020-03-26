@@ -1,30 +1,13 @@
 #standardSQL
 WITH dl AS (
   SELECT
-    COUNT(test_id) AS ml_dl_count_tests,
+    COUNT(a.UUID) AS ml_dl_count_tests,
     COUNT(DISTINCT client.IP) as ml_dl_count_ips,
     APPROX_QUANTILES(a.MeanThroughputMbps, 101 IGNORE NULLS) [SAFE_ORDINAL(51)] AS ml_download_Mbps,
     APPROX_QUANTILES(CAST(a.MinRTT AS FLOAT64), 101 IGNORE NULLS) [SAFE_ORDINAL(51)] AS ml_min_rtt,
-    CASE
-      WHEN partition_date BETWEEN '2014-07-01'
-      AND '2014-12-31' THEN 'dec_2014'
-      WHEN partition_date BETWEEN '2015-01-01'
-      AND '2015-06-30' THEN 'jun_2015'
-      WHEN partition_date BETWEEN '2015-07-01'
-      AND '2015-12-31' THEN 'dec_2015'
-      WHEN partition_date BETWEEN '2016-01-01'
-      AND '2016-06-30' THEN 'jun_2016'
-      WHEN partition_date BETWEEN '2016-07-01'
-      AND '2016-12-31' THEN 'dec_2016'
-      WHEN partition_date BETWEEN '2017-01-01'
-      AND '2017-06-30' THEN 'jun_2017'
-      WHEN partition_date BETWEEN '2017-07-01'
-      AND '2017-12-31' THEN 'dec_2017'
-      WHEN partition_date BETWEEN '2018-01-01'
-      AND '2018-06-30' THEN 'jun_2018'
-      WHEN partition_date BETWEEN '2018-07-01'
-      AND '2018-12-31' THEN 'dec_2018'
-    END AS time_period,
+    EXTRACT(YEAR FROM test_date) AS year,
+    EXTRACT(MONTH FROM test_date) AS month,
+    EXTRACT(WEEK FROM test_date) AS week,
     client.Geo.postal_code AS zip_code
   FROM
     `measurement-lab.library.ndt_unified_downloads` tests,
@@ -34,69 +17,51 @@ WITH dl AS (
     AND partition_date >= "2020-01-01"
     AND ST_WITHIN(
       ST_GeogPoint(
-        connection_spec.client_geolocation.longitude,
-        connection_spec.client_geolocation.latitude
+        client.Geo.longitude,
+        client.Geo.latitude
       ),
       zip_codes.zcta_geom
     )
   GROUP BY
     zip_code,
-    time_period
+    year,
+    month,
+    week
 ),
 ul AS (
   SELECT
-    COUNT(test_id) AS ml_ul_count_tests,
-    COUNT(DISTINCT connection_spec.client_ip) AS ml_ul_count_ips,
-    APPROX_QUANTILES(
-      8 * SAFE_DIVIDE(
-        web100_log_entry.snap.HCThruOctetsReceived,
-        web100_log_entry.snap.Duration
-      ),
-      101 IGNORE NULLS
-    ) [SAFE_ORDINAL(51)] AS ml_upload_Mbps,
-    CASE
-      WHEN partition_date BETWEEN '2014-07-01'
-      AND '2014-12-31' THEN 'dec_2014'
-      WHEN partition_date BETWEEN '2015-01-01'
-      AND '2015-06-30' THEN 'jun_2015'
-      WHEN partition_date BETWEEN '2015-07-01'
-      AND '2015-12-31' THEN 'dec_2015'
-      WHEN partition_date BETWEEN '2016-01-01'
-      AND '2016-06-30' THEN 'jun_2016'
-      WHEN partition_date BETWEEN '2016-07-01'
-      AND '2016-12-31' THEN 'dec_2016'
-      WHEN partition_date BETWEEN '2017-01-01'
-      AND '2017-06-30' THEN 'jun_2017'
-      WHEN partition_date BETWEEN '2017-07-01'
-      AND '2017-12-31' THEN 'dec_2017'
-      WHEN partition_date BETWEEN '2018-01-01'
-      AND '2018-06-30' THEN 'jun_2018'
-      WHEN partition_date BETWEEN '2018-07-01'
-      AND '2018-12-31' THEN 'dec_2018'
-    END AS time_period,
-    zip_code
+    COUNT(a.UUID) AS ml_ul_count_tests,
+    COUNT(DISTINCT client.IP) AS ml_ul_count_ips,
+    APPROX_QUANTILES(a.MeanThroughputMbps, 101 IGNORE NULLS) [SAFE_ORDINAL(51)] AS ml_upload_Mbps,
+    EXTRACT(YEAR FROM test_date) AS year,
+    EXTRACT(MONTH FROM test_date) AS month,
+    EXTRACT(WEEK FROM test_date) AS week,
+    client.Geo.postal_code AS zip_code
   FROM
     `measurement-lab.release.ndt_uploads` tests,
-    `mlab-sandbox.usa_geo.us_zip_codes` zip_codes
+    `bigquery-public-data.geo_us_boundaries.zip_codes` zip_codes
   WHERE
     connection_spec.server_geolocation.country_name = "United States"
-    AND partition_date BETWEEN '2014-07-01'
-    AND '2018-12-31'
+    AND partition_date >= "2020-01-01"
     AND ST_WITHIN(
       ST_GeogPoint(
-        connection_spec.client_geolocation.longitude,
-        connection_spec.client_geolocation.latitude
+        client.Geo.longitude,
+        client.Geo.latitude
       ),
       zip_codes.zcta_geom
     )
   GROUP BY
     zip_code,
-    time_period
+    year,
+    month,
+    week
 ),
 main AS (
   SELECT
     zip_code,
-    time_period,
+    year,
+    month,
+    week,
     ml_ul_count_tests,
     ml_ul_count_ips,
     ml_upload_Mbps,
@@ -106,7 +71,7 @@ main AS (
     ml_min_rtt
   FROM
     dl
-    JOIN ul USING (zip_code, time_period)
+    JOIN ul USING (zip_code, year, month, week)
 ),
 main_dec_2014 AS (
   SELECT
