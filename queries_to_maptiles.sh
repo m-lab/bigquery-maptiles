@@ -71,10 +71,10 @@ for val in ${query_jobs[@]}; do
 
   # Upload to cloud storage publishing location
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/
+    mv ./maptiles/${RESULT_NAME}* gs://${PUB_LOC}/
 
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r *.csv gs://${PUB_LOC}/csv/
+    mv ./*.csv gs://${PUB_LOC}/csv/
 
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
     cp -r ./templates/us_counties.html gs://${PUB_LOC}/index.html
@@ -86,7 +86,7 @@ for val in ${query_jobs[@]}; do
   bq rm -f ${QUALIFIED_TABLE}
 
   # Cleanup locally generated files
-  rm *.csvt *.geojson csv/* maptiles/*
+  rm ./*.csvt ./*.geojson
 
   # NOTE: if the html and tiles are served from different domains we'll need to
   # apply a CORS policy to GCS.
