@@ -2,17 +2,9 @@
 WITH dl AS (
   SELECT
     COUNT(test_id) AS ml_dl_count_tests,
-    COUNT(DISTINCT connection_spec.client_ip) as ml_dl_count_ips,
-    APPROX_QUANTILES(
-      8 * SAFE_DIVIDE(
-        web100_log_entry.snap.HCThruOctetsAcked,
-        (
-          web100_log_entry.snap.SndLimTimeRwin + web100_log_entry.snap.SndLimTimeCwnd + web100_log_entry.snap.SndLimTimeSnd
-        )
-      ),
-      101 IGNORE NULLS
-    ) [SAFE_ORDINAL(51)] AS ml_download_Mbps,
-    APPROX_QUANTILES(CAST(web100_log_entry.snap.MinRTT AS FLOAT64), 101 IGNORE NULLS) [SAFE_ORDINAL(51)] AS ml_min_rtt,
+    COUNT(DISTINCT client.IP) as ml_dl_count_ips,
+    APPROX_QUANTILES(a.MeanThroughputMbps, 101 IGNORE NULLS) [SAFE_ORDINAL(51)] AS ml_download_Mbps,
+    APPROX_QUANTILES(CAST(a.MinRTT AS FLOAT64), 101 IGNORE NULLS) [SAFE_ORDINAL(51)] AS ml_min_rtt,
     CASE
       WHEN partition_date BETWEEN '2014-07-01'
       AND '2014-12-31' THEN 'dec_2014'
@@ -33,14 +25,13 @@ WITH dl AS (
       WHEN partition_date BETWEEN '2018-07-01'
       AND '2018-12-31' THEN 'dec_2018'
     END AS time_period,
-    zip_code
+    client.Geo.postal_code AS zip_code
   FROM
-    `measurement-lab.release.ndt_downloads` tests,
-    `mlab-sandbox.usa_geo.us_zip_codes` zip_codes
+    `measurement-lab.library.ndt_unified_downloads` tests,
+    `bigquery-public-data.geo_us_boundaries.zip_codes` zip_codes
   WHERE
-    connection_spec.server_geolocation.country_name = "United States"
-    AND partition_date BETWEEN '2014-07-01'
-    AND '2018-12-31'
+    client.Geo.country_name = "United States"
+    AND partition_date >= "2020-01-01"
     AND ST_WITHIN(
       ST_GeogPoint(
         connection_spec.client_geolocation.longitude,

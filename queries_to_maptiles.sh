@@ -49,7 +49,7 @@ for val in ${query_jobs[@]}; do
       gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv
 
   # Fetch the CSV files that were just exported.
-  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv ./csv/
+  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv csv/
 
   # ogr2ogr requires a schema file to know which csv column represents
   # the geometry. We pass all filenames to the inference script, but
