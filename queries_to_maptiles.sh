@@ -60,7 +60,7 @@ for val in ${query_jobs[@]}; do
   # Use xargs to convert all the csv files to geojson individually, in
   # parallel. We will aggregate them in the next step.  See csv_to_geojson
   # script for ogr2ogr args.
-  echo csv/${RESULT_NAME}_*.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
+  echo ${RESULT_NAME}_*.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
 
   # Let tippecanoe read all the geojson files into one layer.
   tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -z6 \
