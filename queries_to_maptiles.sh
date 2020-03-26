@@ -15,6 +15,8 @@ for val in ${query_jobs[@]}; do
   SCHEMA="${RESULT_NAME}.json"
   QUERY="${RESULT_NAME}.sql"
   GCS_STORAGE="${RESULT_NAME}_temp"
+  PUB_LOC="maptiles.mlab-sandbox.measurementlab.net/${RESULT_NAME}"
+
 
   # TODO: replace use of bq with a custom Go binary that runs the query and
   # outputs the right format. Also open an HTTP port for Cloud Run.
@@ -50,7 +52,7 @@ for val in ${query_jobs[@]}; do
       gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv
 
   # Fetch the CSV files that were just exported.
-  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv ./
+  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv ./csv/
 
   # Cleanup the files on GCS because we don't need them there anymore.
   gsutil rm -r gs://${GCS_STORAGE}
@@ -60,7 +62,7 @@ for val in ${query_jobs[@]}; do
   # the geometry. We pass all filenames to the inference script, but
   # it only reads the first one, since the schema should be consistent
   # for all of them.
-  scripts/infer_csvt_schema.sh ${RESULT_NAME}_*.csv > schema.csvt
+  scripts/infer_csvt_schema.sh csv/${RESULT_NAME}_*.csv > schema.csvt
 
   # Use xargs to convert all the csv files to geojson individually, in
   # parallel. We will aggregate them in the next step.  See csv_to_geojson
@@ -76,10 +78,16 @@ for val in ${query_jobs[@]}; do
 
   # Upload to cloud storage publishing location
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/maptiles/
+    cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/
 
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./maptiles/example.html gs://bigquery-maptiles-${PROJECT}/example.html
+    cp -r ./csv/* gs://${PUB_LOC}/csv/
+
+  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+    cp -r ./templates/us_counties.html gs://${PUB_LOC}/index.html
+
+  # Final cleanup
+  rm *.csvt *.geojson csv/* maptiles/*
 
   # NOTE: if the html and tiles are served from different domains we'll need to
   # apply a CORS policy to GCS.

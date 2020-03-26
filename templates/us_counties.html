@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title>M-Lab Vector Tiles Example</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .map-overlay {
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id='map'></div>
+
+    <div class='map-overlay top'>
+        <div class='map-overlay-inner'>
+            <!-- TODO: add legend for rates and colors -->
+        </div>
+    </div>
+
+    <script>
+
+        /* MAPBOX DATA */
+
+        mapboxgl.accessToken = 'pk.eyJ1IjoibmV3YW1lcmljYSIsImEiOiIyM3ZnYUtrIn0.57fFgg_iM7S1wLH2GQC71g';
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/newamerica/cjwyjqw3q4dej1cn3qirrgvnt',
+            zoom: 1.5,
+            center: [0, 0]
+        });
+
+        map.on('load', function () {
+
+            map.addLayer({
+                "id": "mlab",
+                "type": "line",
+                "source": {
+                    type: "vector",
+                    tiles: [
+                        new URL("/", window.location) + "{z}/{x}/{y}.pbf"
+                    ]
+                },
+                "source-layer": "us_counties",
+                "paint": {
+                    'line-color': '#FF0000',
+                }
+            });
+        });
+    </script>
+
+</body>
+
+</html>
