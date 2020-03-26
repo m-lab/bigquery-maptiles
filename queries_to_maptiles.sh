@@ -55,7 +55,7 @@ for val in ${query_jobs[@]}; do
   # the geometry. We pass all filenames to the inference script, but
   # it only reads the first one, since the schema should be consistent
   # for all of them.
-  scripts/infer_csvt_schema.sh csv/${RESULT_NAME}_*.csv > schema.csvt
+  scripts/infer_csvt_schema.sh csv/${RESULT_NAME}_*.csv > csv/schema.csvt
 
   # Use xargs to convert all the csv files to geojson individually, in
   # parallel. We will aggregate them in the next step.  See csv_to_geojson
