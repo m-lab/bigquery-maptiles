@@ -7,7 +7,7 @@ USERNAME="critzo"
 TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 
-declare -a query_jobs=("us_counties")
+declare -a query_jobs=("us_counties" "us_zipcode" "us_116th_congress")
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
