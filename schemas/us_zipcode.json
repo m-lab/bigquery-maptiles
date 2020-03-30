@@ -211,12 +211,17 @@
   },
   {
     "mode": "NULLABLE",
-    "name": "GEOID",
+    "name": "zipcode",
     "type": "STRING"
   },
   {
     "mode": "NULLABLE",
-    "name": "name",
+    "name": "city",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "county",
     "type": "STRING"
   },
   {

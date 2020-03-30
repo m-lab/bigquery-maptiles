@@ -9,77 +9,179 @@ WITH counties AS (
 ),
 mlab_dl AS (
   SELECT
-    tests.*,
+    COUNT(a.UUID) AS dl_count_tests,
+    COUNT(DISTINCT client.IP) AS dl_count_ips,
+    APPROX_QUANTILES(a.MeanThroughputMbps, 101) [SAFE_ORDINAL(51)] AS MED_download_Mbps,
+    APPROX_QUANTILES(CAST(a.MinRTT AS FLOAT64), 101) [ORDINAL(51)] as MED_DL_min_rtt,
     CONCAT(EXTRACT(YEAR FROM test_date),"-", EXTRACT(MONTH FROM test_date), "-",
-      EXTRACT(WEEK FROM test_date)) AS ymw,
-    counties.geo_id AS dl_geo_id
+      EXTRACT(WEEK FROM test_date)) AS time_period,
+    counties.geo_id AS GEOID
   FROM
-    `measurement-lab.library.ndt_unified_downloads` tests
-    JOIN counties ON ST_WITHIN(
+    `measurement-lab.library.ndt_unified_downloads` tests,
+    `bigquery-public-data.geo_us_boundaries.counties` counties
+  WHERE
+    client.Geo.country_name = "United States"
+    AND test_date >= '2020-01-01'
+    AND ST_WITHIN(
       ST_GeogPoint(
         client.Geo.longitude,
         client.Geo.latitude
-      ), WKT
+      ), county_geom
     )
-  WHERE
-    client.Geo.country_name = "United States"
-    AND test_date >= '2019-12-29'
+    GROUP BY GEOID, time_period
 ),
 mlab_ul AS (
   SELECT
-    tests.*,
+    COUNT(a.UUID) AS ul_count_tests,
+    COUNT(DISTINCT client.IP) AS ul_count_ips,
+    APPROX_QUANTILES(a.MeanThroughputMbps,101) [SAFE_ORDINAL(51)] AS MED_upload_Mbps,
     CONCAT(EXTRACT(YEAR FROM test_date),"-", EXTRACT(MONTH FROM test_date), "-",
-      EXTRACT(WEEK FROM test_date)) AS ymw,
-    counties.geo_id AS ul_geo_id
+      EXTRACT(WEEK FROM test_date)) AS time_period,
+    counties.geo_id AS GEOID
   FROM
-    `mlab-sandbox.library.ndt_unified_uploads` tests
-    JOIN counties ON ST_WITHIN(
+    `mlab-sandbox.library.ndt_unified_uploads` tests,
+    `bigquery-public-data.geo_us_boundaries.counties` counties
+  WHERE
+    client.Geo.country_name = "United States"
+    AND test_date >= '2020-01-01'
+    AND ST_WITHIN(
       ST_GeogPoint(
         client.Geo.longitude,
         client.Geo.latitude
-      ),
-      WKT
+      ), county_geom
     )
-  WHERE
-    client.Geo.country_name = "United States"
-    AND test_date >= '2019-12-29'
-
+  GROUP BY GEOID, time_period
 ),
-dl_agg AS (
+main AS (
   SELECT
-  mlab_dl.dl_geo_id AS dl_geo_id,
-  ymw AS dl_ymw,
-  MIN(a.MeanThroughputMbps) AS MIN_download_Mbps,
-  APPROX_QUANTILES(a.MeanThroughputMbps, 101) [SAFE_ORDINAL(26)] AS LOWER_QUARTILE_download_Mbps,
-  APPROX_QUANTILES(a.MeanThroughputMbps, 101) [SAFE_ORDINAL(51)] AS MED_download_Mbps,
-  APPROX_QUANTILES(a.MeanThroughputMbps, 101) [SAFE_ORDINAL(76)] AS UPPER_QUARTILE_download_Mbps,
-  MAX(a.MeanThroughputMbps) AS MAX_download_Mbps,  
-  AVG(a.MeanThroughputMbps) AS AVG_download_Mbps,
-  APPROX_QUANTILES(CAST(a.MinRTT AS FLOAT64), 101) [ORDINAL(51)] as MED_min_rtt
-  FROM mlab_dl
-  GROUP BY dl_geo_id, dl_ymw
-),
-ul_agg AS (
-  SELECT
-  mlab_ul.ul_geo_id AS ul_geo_id,
-  ymw,
-  MIN(a.MeanThroughputMbps) AS MIN_upload_Mbps,
-  APPROX_QUANTILES(a.MeanThroughputMbps,101) [SAFE_ORDINAL(26)] AS LOWER_QUARTILE_upload_Mbps,
-  APPROX_QUANTILES(a.MeanThroughputMbps,101) [SAFE_ORDINAL(51)] AS MED_upload_Mbps,
-  APPROX_QUANTILES(a.MeanThroughputMbps,101) [SAFE_ORDINAL(76)] AS UPPER_QUARTILE_upload_Mbps,     
-  MAX(a.MeanThroughputMbps) AS MAX_upload_Mbps,   
-  AVG(a.MeanThroughputMbps) 
-    AS AVG_upload_Mbps
-  FROM mlab_ul
-  GROUP BY ul_geo_id, ymw
-),
-summary AS (
-  SELECT
-    dl_geo_id, ymw, MIN_download_Mbps, LOWER_QUARTILE_download_Mbps, MED_download_Mbps,
-    UPPER_QUARTILE_download_Mbps, MAX_download_Mbps, AVG_download_Mbps, MED_min_rtt, MIN_upload_Mbps, LOWER_QUARTILE_upload_Mbps, 
-    MED_upload_Mbps, UPPER_QUARTILE_upload_Mbps, MAX_upload_Mbps, AVG_upload_Mbps
+    GEOID, time_period, dl_count_tests, dl_count_ips, MED_download_Mbps, MED_DL_min_rtt,
+    ul_count_tests, ul_count_ips, MED_upload_Mbps
   FROM
-  dl_agg JOIN ul_agg ON dl_geo_id = ul_agg.ul_geo_id
-  JOIN counties ON dl_geo_id = counties.geo_id
+  mlab_dl JOIN mlab_ul USING (GEOID, time_period)
+),
+main_2020w1 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w1,
+    dl_count_ips AS dl_count_ips_2020w1,
+    MED_download_Mbps AS MED_download_Mbps_2020w1,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w1,
+    ul_count_tests AS ul_count_tests_2020w1, 
+    ul_count_ips AS ul_count_ips_2020w1, 
+    MED_upload_Mbps AS MED_upload_Mbps_2020w1
+  FROM main
+  WHERE time_period = "2020-1-1"  
+),
+main_2020w2 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w2,
+    dl_count_ips AS dl_count_ips_2020w2,
+    MED_download_Mbps AS MED_download_Mbps_2020w2,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w2,
+    ul_count_tests AS ul_count_tests_2020w2, 
+    ul_count_ips AS ul_count_ips_2020w2, 
+    MED_upload_Mbps AS MED_upload_Mbps_2020w2
+  FROM main
+  WHERE time_period = "2020-1-2"  
+),
+main_2020w3 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w3,
+    dl_count_ips AS dl_count_ips_2020w3,
+    MED_download_Mbps AS MED_download_Mbps_2020w3,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w3,
+    ul_count_tests AS ul_count_tests_2020w3, 
+    ul_count_ips AS ul_count_ips_2020w3,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w3
+  FROM main
+  WHERE time_period = "2020-1-3"  
+),
+main_2020w4 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w4,
+    dl_count_ips AS dl_count_ips_2020w4,
+    MED_download_Mbps AS MED_download_Mbps_2020w4,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w4,
+    ul_count_tests AS ul_count_tests_2020w4, 
+    ul_count_ips AS ul_count_ips_2020w4,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w4
+  FROM main
+  WHERE time_period = "2020-1-4"
+),
+main_2020w5 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w5,
+    dl_count_ips AS dl_count_ips_2020w5,
+    MED_download_Mbps AS MED_download_Mbps_2020w5,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w5,
+    ul_count_tests AS ul_count_tests_2020w5, 
+    ul_count_ips AS ul_count_ips_2020w5,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w5
+  FROM main
+  WHERE time_period = "2020-1-5"
+),
+main_2020w6 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w6,
+    dl_count_ips AS dl_count_ips_2020w6,
+    MED_download_Mbps AS MED_download_Mbps_2020w6,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w6,
+    ul_count_tests AS ul_count_tests_2020w6, 
+    ul_count_ips AS ul_count_ips_2020w6,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w6
+  FROM main
+  WHERE time_period = "2020-2-6"
 )
-SELECT * FROM summary
+SELECT
+    dl_count_tests_2020w1,
+    dl_count_ips_2020w1,
+    MED_download_Mbps_2020w1,
+    MED_DL_min_rtt_2020w1,
+    ul_count_tests_2020w1, 
+    ul_count_ips_2020w1, 
+    MED_upload_Mbps_2020w1,
+    dl_count_tests_2020w2,
+    dl_count_ips_2020w2,
+    MED_download_Mbps_2020w2,
+    MED_DL_min_rtt_2020w2,
+    ul_count_tests_2020w2, 
+    ul_count_ips_2020w2, 
+    MED_upload_Mbps_2020w2,
+    dl_count_tests_2020w3,
+    dl_count_ips_2020w3,
+    MED_download_Mbps_2020w3,
+    MED_DL_min_rtt_2020w3,
+    ul_count_tests_2020w3, 
+    ul_count_ips_2020w3,
+    MED_upload_Mbps_2020w3,
+    dl_count_tests_2020w4,
+    dl_count_ips_2020w4,
+    MED_download_Mbps_2020w4,
+    MED_DL_min_rtt_2020w4,
+    ul_count_tests_2020w4, 
+    ul_count_ips_2020w4,
+    MED_upload_Mbps_2020w4,
+    dl_count_tests_2020w5,
+    dl_count_ips_2020w5,
+    MED_download_Mbps_2020w5,
+    MED_DL_min_rtt_2020w5,
+    ul_count_tests_2020w5, 
+    ul_count_ips_2020w5,
+    MED_upload_Mbps_2020w5,
+    dl_count_tests_2020w6,
+    dl_count_ips_2020w6,
+    MED_download_Mbps_2020w6,
+    MED_DL_min_rtt_2020w6,
+    ul_count_tests_2020w6, 
+    ul_count_ips_2020w6,
+    MED_upload_Mbps_2020w6,
+    counties.geo_id as GEOID,
+    counties.county_name AS name,
+    counties.county_geom AS WKT
+FROM
+  `bigquery-public-data.geo_us_boundaries.counties` counties
+  LEFT JOIN main_2020w1 ON (counties.geo_id = GEOID)
+  LEFT JOIN main_2020w2 USING (GEOID)
+  LEFT JOIN main_2020w3 USING (GEOID)
+  LEFT JOIN main_2020w4 USING (GEOID)
+  LEFT JOIN main_2020w5 USING (GEOID)
+  LEFT JOIN main_2020w6 USING (GEOID);

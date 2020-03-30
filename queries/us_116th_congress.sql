@@ -1,341 +1,192 @@
 #standardSQL
-WITH dl AS (
+WITH congress_district_116 AS (
   SELECT
-    COUNT(test_id) AS ml_dl_count_tests,
-    COUNT(DISTINCT connection_spec.client_ip) as ml_dl_count_ips,
-    APPROX_QUANTILES(
-      8 * SAFE_DIVIDE(
-        web100_log_entry.snap.HCThruOctetsAcked,
-        (
-          web100_log_entry.snap.SndLimTimeRwin + web100_log_entry.snap.SndLimTimeCwnd + web100_log_entry.snap.SndLimTimeSnd
-        )
-      ),
-      101 IGNORE NULLS
-    ) [SAFE_ORDINAL(51)] AS ml_download_Mbps,
-    APPROX_QUANTILES(CAST(web100_log_entry.snap.MinRTT AS FLOAT64), 101 IGNORE NULLS) [SAFE_ORDINAL(51)] AS ml_min_rtt,
-    CASE
-      WHEN partition_date BETWEEN '2014-07-01'
-      AND '2014-12-31' THEN 'dec_2014'
-      WHEN partition_date BETWEEN '2015-01-01'
-      AND '2015-06-30' THEN 'jun_2015'
-      WHEN partition_date BETWEEN '2015-07-01'
-      AND '2015-12-31' THEN 'dec_2015'
-      WHEN partition_date BETWEEN '2016-01-01'
-      AND '2016-06-30' THEN 'jun_2016'
-      WHEN partition_date BETWEEN '2016-07-01'
-      AND '2016-12-31' THEN 'dec_2016'
-      WHEN partition_date BETWEEN '2017-01-01'
-      AND '2017-06-30' THEN 'jun_2017'
-      WHEN partition_date BETWEEN '2017-07-01'
-      AND '2017-12-31' THEN 'dec_2017'
-      WHEN partition_date BETWEEN '2018-01-01'
-      AND '2018-06-30' THEN 'jun_2018'
-      WHEN partition_date BETWEEN '2018-07-01'
-      AND '2018-12-31' THEN 'dec_2018'
-    END AS time_period,
-    congress_district_code as GEOID
+    geo_id,
+    state_fips_code,
+    district_fips_code,
+    lsad_name AS district_lsad_name,
+    lsad_code AS district_lsad_code,
+    int_point_lat,
+    int_point_lon,
+    district_geom AS WKT,
   FROM
-    `measurement-lab.release.ndt_downloads` tests,
-    `mlab-sandbox.usa_geo.116_congress_district` districts
-  WHERE
-    connection_spec.server_geolocation.country_name = "United States"
-    AND partition_date BETWEEN '2014-07-01'
-    AND '2018-12-31'
-    AND ST_WITHIN(
-      ST_GeogPoint(
-        connection_spec.client_geolocation.longitude,
-        connection_spec.client_geolocation.latitude
-      ),
-      districts.district_geom
-    )
-  GROUP BY
-    GEOID,
-    time_period
+    `bigquery-public-data.geo_us_boundaries.congress_district_116`
 ),
-ul AS (
+mlab_dl AS (
   SELECT
-    COUNT(test_id) AS ml_ul_count_tests,
-    COUNT(DISTINCT connection_spec.client_ip) AS ml_ul_count_ips,
-    APPROX_QUANTILES(
-      8 * SAFE_DIVIDE(
-        web100_log_entry.snap.HCThruOctetsReceived,
-        web100_log_entry.snap.Duration
-      ),
-      101 IGNORE NULLS
-    ) [SAFE_ORDINAL(51)] AS ml_upload_Mbps,
-    CASE
-      WHEN partition_date BETWEEN '2014-07-01'
-      AND '2014-12-31' THEN 'dec_2014'
-      WHEN partition_date BETWEEN '2015-01-01'
-      AND '2015-06-30' THEN 'jun_2015'
-      WHEN partition_date BETWEEN '2015-07-01'
-      AND '2015-12-31' THEN 'dec_2015'
-      WHEN partition_date BETWEEN '2016-01-01'
-      AND '2016-06-30' THEN 'jun_2016'
-      WHEN partition_date BETWEEN '2016-07-01'
-      AND '2016-12-31' THEN 'dec_2016'
-      WHEN partition_date BETWEEN '2017-01-01'
-      AND '2017-06-30' THEN 'jun_2017'
-      WHEN partition_date BETWEEN '2017-07-01'
-      AND '2017-12-31' THEN 'dec_2017'
-      WHEN partition_date BETWEEN '2018-01-01'
-      AND '2018-06-30' THEN 'jun_2018'
-      WHEN partition_date BETWEEN '2018-07-01'
-      AND '2018-12-31' THEN 'dec_2018'
-    END AS time_period,
-    congress_district_code as GEOID
+    COUNT(a.UUID) AS dl_count_tests,
+    COUNT(DISTINCT client.IP) AS dl_count_ips,
+    APPROX_QUANTILES(a.MeanThroughputMbps, 101) [SAFE_ORDINAL(51)] AS MED_download_Mbps,
+    APPROX_QUANTILES(CAST(a.MinRTT AS FLOAT64), 101) [ORDINAL(51)] as MED_DL_min_rtt,
+    CONCAT(EXTRACT(YEAR FROM test_date),"-", EXTRACT(MONTH FROM test_date), "-",
+      EXTRACT(WEEK FROM test_date)) AS time_period,
+    districts.geo_id AS GEOID
   FROM
-    `measurement-lab.release.ndt_uploads` tests,
-    `mlab-sandbox.usa_geo.116_congress_district` districts
+    `measurement-lab.library.ndt_unified_downloads` tests,
+    `bigquery-public-data.geo_us_boundaries.congress_district_116` districts
   WHERE
-    connection_spec.server_geolocation.country_name = "United States"
-    AND partition_date BETWEEN '2014-07-01'
-    AND '2018-12-31'
+    client.Geo.country_name = "United States"
+    AND test_date >= '2020-01-01'
     AND ST_WITHIN(
       ST_GeogPoint(
-        connection_spec.client_geolocation.longitude,
-        connection_spec.client_geolocation.latitude
-      ),
-      districts.district_geom
+        client.Geo.longitude,
+        client.Geo.latitude
+      ), district_geom
     )
-  GROUP BY
-    GEOID,
-    time_period
+    GROUP BY GEOID, time_period
+),
+mlab_ul AS (
+  SELECT
+    COUNT(a.UUID) AS ul_count_tests,
+    COUNT(DISTINCT client.IP) AS ul_count_ips,
+    APPROX_QUANTILES(a.MeanThroughputMbps,101) [SAFE_ORDINAL(51)] AS MED_upload_Mbps,
+    CONCAT(EXTRACT(YEAR FROM test_date),"-", EXTRACT(MONTH FROM test_date), "-",
+      EXTRACT(WEEK FROM test_date)) AS time_period,
+    districts.geo_id AS GEOID
+  FROM
+    `mlab-sandbox.library.ndt_unified_uploads` tests,
+    `bigquery-public-data.geo_us_boundaries.congress_district_116` districts
+  WHERE
+    client.Geo.country_name = "United States"
+    AND test_date >= '2020-01-01'
+    AND ST_WITHIN(
+      ST_GeogPoint(
+        client.Geo.longitude,
+        client.Geo.latitude
+      ), district_geom
+    )
+  GROUP BY GEOID, time_period
 ),
 main AS (
   SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests,
-    ml_ul_count_ips,
-    ml_upload_Mbps,
-    ml_dl_count_tests,
-    ml_dl_count_ips,
-    ml_download_Mbps,
-    ml_min_rtt
+    GEOID, time_period, dl_count_tests, dl_count_ips, MED_download_Mbps, MED_DL_min_rtt,
+    ul_count_tests, ul_count_ips, MED_upload_Mbps
   FROM
-    dl
-    JOIN ul USING (GEOID, time_period)
+  mlab_dl JOIN mlab_ul USING (GEOID, time_period)
 ),
-main_dec_2014 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_dec_2014,
-    ml_ul_count_ips AS ml_ul_count_ips_dec_2014,
-    ml_upload_Mbps AS ml_upload_Mbps_dec_2014,
-    ml_dl_count_tests AS ml_dl_count_tests_dec_2014,
-    ml_dl_count_ips AS ml_dl_count_ips_dec_2014,
-    ml_download_Mbps AS ml_download_Mbps_dec_2014,
-    ml_min_rtt AS ml_min_rtt_dec_2014
-  FROM
-    main
-  WHERE
-    time_period = 'dec_2014'
+main_2020w1 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w1,
+    dl_count_ips AS dl_count_ips_2020w1,
+    MED_download_Mbps AS MED_download_Mbps_2020w1,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w1,
+    ul_count_tests AS ul_count_tests_2020w1, 
+    ul_count_ips AS ul_count_ips_2020w1, 
+    MED_upload_Mbps AS MED_upload_Mbps_2020w1
+  FROM main
+  WHERE time_period = "2020-1-1"  
 ),
-main_jun_2015 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_jun_2015,
-    ml_ul_count_ips AS ml_ul_count_ips_jun_2015,
-    ml_upload_Mbps AS ml_upload_Mbps_jun_2015,
-    ml_dl_count_tests AS ml_dl_count_tests_jun_2015,
-    ml_dl_count_ips AS ml_dl_count_ips_jun_2015,
-    ml_download_Mbps AS ml_download_Mbps_jun_2015,
-    ml_min_rtt AS ml_min_rtt_jun_2015
-  FROM
-    main
-  WHERE
-    time_period = 'jun_2015'
+main_2020w2 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w2,
+    dl_count_ips AS dl_count_ips_2020w2,
+    MED_download_Mbps AS MED_download_Mbps_2020w2,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w2,
+    ul_count_tests AS ul_count_tests_2020w2, 
+    ul_count_ips AS ul_count_ips_2020w2, 
+    MED_upload_Mbps AS MED_upload_Mbps_2020w2
+  FROM main
+  WHERE time_period = "2020-1-2"  
 ),
-main_dec_2015 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_dec_2015,
-    ml_ul_count_ips AS ml_ul_count_ips_dec_2015,
-    ml_upload_Mbps AS ml_upload_Mbps_dec_2015,
-    ml_dl_count_tests AS ml_dl_count_tests_dec_2015,
-    ml_dl_count_ips AS ml_dl_count_ips_dec_2015,
-    ml_download_Mbps AS ml_download_Mbps_dec_2015,
-    ml_min_rtt AS ml_min_rtt_dec_2015
-  FROM
-    main
-  WHERE
-    time_period = 'dec_2015'
+main_2020w3 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w3,
+    dl_count_ips AS dl_count_ips_2020w3,
+    MED_download_Mbps AS MED_download_Mbps_2020w3,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w3,
+    ul_count_tests AS ul_count_tests_2020w3, 
+    ul_count_ips AS ul_count_ips_2020w3,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w3
+  FROM main
+  WHERE time_period = "2020-1-3"  
 ),
-main_jun_2016 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_jun_2016,
-    ml_ul_count_ips AS ml_ul_count_ips_jun_2016,
-    ml_upload_Mbps AS ml_upload_Mbps_jun_2016,
-    ml_dl_count_tests AS ml_dl_count_tests_jun_2016,
-    ml_dl_count_ips AS ml_dl_count_ips_jun_2016,
-    ml_download_Mbps AS ml_download_Mbps_jun_2016,
-    ml_min_rtt AS ml_min_rtt_jun_2016
-  FROM
-    main
-  WHERE
-    time_period = 'jun_2016'
+main_2020w4 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w4,
+    dl_count_ips AS dl_count_ips_2020w4,
+    MED_download_Mbps AS MED_download_Mbps_2020w4,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w4,
+    ul_count_tests AS ul_count_tests_2020w4, 
+    ul_count_ips AS ul_count_ips_2020w4,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w4
+  FROM main
+  WHERE time_period = "2020-1-4"
 ),
-main_dec_2016 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_dec_2016,
-    ml_ul_count_ips AS ml_ul_count_ips_dec_2016,
-    ml_upload_Mbps AS ml_upload_Mbps_dec_2016,
-    ml_dl_count_tests AS ml_dl_count_tests_dec_2016,
-    ml_dl_count_ips AS ml_dl_count_ips_dec_2016,
-    ml_download_Mbps AS ml_download_Mbps_dec_2016,
-    ml_min_rtt AS ml_min_rtt_dec_2016
-  FROM
-    main
-  WHERE
-    time_period = 'dec_2016'
+main_2020w5 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w5,
+    dl_count_ips AS dl_count_ips_2020w5,
+    MED_download_Mbps AS MED_download_Mbps_2020w5,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w5,
+    ul_count_tests AS ul_count_tests_2020w5, 
+    ul_count_ips AS ul_count_ips_2020w5,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w5
+  FROM main
+  WHERE time_period = "2020-1-5"
 ),
-main_jun_2017 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_jun_2017,
-    ml_ul_count_ips AS ml_ul_count_ips_jun_2017,
-    ml_upload_Mbps AS ml_upload_Mbps_jun_2017,
-    ml_dl_count_tests AS ml_dl_count_tests_jun_2017,
-    ml_dl_count_ips AS ml_dl_count_ips_jun_2017,
-    ml_download_Mbps AS ml_download_Mbps_jun_2017,
-    ml_min_rtt AS ml_min_rtt_jun_2017
-  FROM
-    main
-  WHERE
-    time_period = 'jun_2017'
-),
-main_dec_2017 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_dec_2017,
-    ml_ul_count_ips AS ml_ul_count_ips_dec_2017,
-    ml_upload_Mbps AS ml_upload_Mbps_dec_2017,
-    ml_dl_count_tests AS ml_dl_count_tests_dec_2017,
-    ml_dl_count_ips AS ml_dl_count_ips_dec_2017,
-    ml_download_Mbps AS ml_download_Mbps_dec_2017,
-    ml_min_rtt AS ml_min_rtt_dec_2017
-  FROM
-    main
-  WHERE
-    time_period = 'dec_2017'
-),
-main_jun_2018 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_jun_2018,
-    ml_ul_count_ips AS ml_ul_count_ips_jun_2018,
-    ml_upload_Mbps AS ml_upload_Mbps_jun_2018,
-    ml_dl_count_tests AS ml_dl_count_tests_jun_2018,
-    ml_dl_count_ips AS ml_dl_count_ips_jun_2018,
-    ml_download_Mbps AS ml_download_Mbps_jun_2018,
-    ml_min_rtt AS ml_min_rtt_jun_2018
-  FROM
-    main
-  WHERE
-    time_period = 'jun_2018'
-),
-main_dec_2018 AS (
-  SELECT
-    GEOID,
-    time_period,
-    ml_ul_count_tests AS ml_ul_count_tests_dec_2018,
-    ml_ul_count_ips AS ml_ul_count_ips_dec_2018,
-    ml_upload_Mbps AS ml_upload_Mbps_dec_2018,
-    ml_dl_count_tests AS ml_dl_count_tests_dec_2018,
-    ml_dl_count_ips AS ml_dl_count_ips_dec_2018,
-    ml_download_Mbps AS ml_download_Mbps_dec_2018,
-    ml_min_rtt AS ml_min_rtt_dec_2018
-  FROM
-    main
-  WHERE
-    time_period = 'dec_2018'
+main_2020w6 AS (
+  SELECT GEOID, time_period, 
+    dl_count_tests AS dl_count_tests_2020w6,
+    dl_count_ips AS dl_count_ips_2020w6,
+    MED_download_Mbps AS MED_download_Mbps_2020w6,
+    MED_DL_min_rtt AS MED_DL_min_rtt_2020w6,
+    ul_count_tests AS ul_count_tests_2020w6, 
+    ul_count_ips AS ul_count_ips_2020w6,
+    MED_upload_Mbps AS MED_upload_Mbps_2020w6
+  FROM main
+  WHERE time_period = "2020-2-6"
 )
 SELECT
-  ml_ul_count_tests_dec_2014,
-  ml_ul_count_ips_dec_2014,
-  ml_upload_Mbps_dec_2014,
-  ml_dl_count_tests_dec_2014,
-  ml_dl_count_ips_dec_2014,
-  ml_download_Mbps_dec_2014,
-  ml_min_rtt_dec_2014,
-  ml_ul_count_tests_jun_2015,
-  ml_ul_count_ips_jun_2015,
-  ml_upload_Mbps_jun_2015,
-  ml_dl_count_tests_jun_2015,
-  ml_dl_count_ips_jun_2015,
-  ml_download_Mbps_jun_2015,
-  ml_min_rtt_jun_2015,
-  ml_ul_count_tests_dec_2015,
-  ml_ul_count_ips_dec_2015,
-  ml_upload_Mbps_dec_2015,
-  ml_dl_count_tests_dec_2015,
-  ml_dl_count_ips_dec_2015,
-  ml_download_Mbps_dec_2015,
-  ml_min_rtt_dec_2015,
-  ml_ul_count_tests_jun_2016,
-  ml_ul_count_ips_jun_2016,
-  ml_upload_Mbps_jun_2016,
-  ml_dl_count_tests_jun_2016,
-  ml_dl_count_ips_jun_2016,
-  ml_download_Mbps_jun_2016,
-  ml_min_rtt_jun_2016,
-  ml_ul_count_tests_dec_2016,
-  ml_ul_count_ips_dec_2016,
-  ml_upload_Mbps_dec_2016,
-  ml_dl_count_tests_dec_2016,
-  ml_dl_count_ips_dec_2016,
-  ml_download_Mbps_dec_2016,
-  ml_min_rtt_dec_2016,
-  ml_ul_count_tests_jun_2017,
-  ml_ul_count_ips_jun_2017,
-  ml_upload_Mbps_jun_2017,
-  ml_dl_count_tests_jun_2017,
-  ml_dl_count_ips_jun_2017,
-  ml_download_Mbps_jun_2017,
-  ml_min_rtt_jun_2017,
-  ml_ul_count_tests_dec_2017,
-  ml_ul_count_ips_dec_2017,
-  ml_upload_Mbps_dec_2017,
-  ml_dl_count_tests_dec_2017,
-  ml_dl_count_ips_dec_2017,
-  ml_download_Mbps_dec_2017,
-  ml_min_rtt_dec_2017,
-  ml_ul_count_tests_jun_2018,
-  ml_ul_count_ips_jun_2018,
-  ml_upload_Mbps_jun_2018,
-  ml_dl_count_tests_jun_2018,
-  ml_dl_count_ips_jun_2018,
-  ml_download_Mbps_jun_2018,
-  ml_min_rtt_jun_2018,
-  ml_ul_count_tests_dec_2018,
-  ml_ul_count_ips_dec_2018,
-  ml_upload_Mbps_dec_2018,
-  ml_dl_count_tests_dec_2018,
-  ml_dl_count_ips_dec_2018,
-  ml_download_Mbps_dec_2018,
-  ml_min_rtt_dec_2018,
-  districts.congress_district_code as GEOID,
-  districts.legal_area_name AS name,
-  districts.district_geom AS WKT
+    dl_count_tests_2020w1,
+    dl_count_ips_2020w1,
+    MED_download_Mbps_2020w1,
+    MED_DL_min_rtt_2020w1,
+    ul_count_tests_2020w1, 
+    ul_count_ips_2020w1, 
+    MED_upload_Mbps_2020w1,
+    dl_count_tests_2020w2,
+    dl_count_ips_2020w2,
+    MED_download_Mbps_2020w2,
+    MED_DL_min_rtt_2020w2,
+    ul_count_tests_2020w2, 
+    ul_count_ips_2020w2, 
+    MED_upload_Mbps_2020w2,
+    dl_count_tests_2020w3,
+    dl_count_ips_2020w3,
+    MED_download_Mbps_2020w3,
+    MED_DL_min_rtt_2020w3,
+    ul_count_tests_2020w3, 
+    ul_count_ips_2020w3,
+    MED_upload_Mbps_2020w3,
+    dl_count_tests_2020w4,
+    dl_count_ips_2020w4,
+    MED_download_Mbps_2020w4,
+    MED_DL_min_rtt_2020w4,
+    ul_count_tests_2020w4, 
+    ul_count_ips_2020w4,
+    MED_upload_Mbps_2020w4,
+    dl_count_tests_2020w5,
+    dl_count_ips_2020w5,
+    MED_download_Mbps_2020w5,
+    MED_DL_min_rtt_2020w5,
+    ul_count_tests_2020w5, 
+    ul_count_ips_2020w5,
+    MED_upload_Mbps_2020w5,
+    dl_count_tests_2020w6,
+    dl_count_ips_2020w6,
+    MED_download_Mbps_2020w6,
+    MED_DL_min_rtt_2020w6,
+    ul_count_tests_2020w6, 
+    ul_count_ips_2020w6,
+    MED_upload_Mbps_2020w6,
+    districts.geo_id as GEOID,
+    districts.lsad_name AS name,
+    districts.district_geom AS WKT
 FROM
-  `mlab-sandbox.usa_geo.116_congress_district` districts
-  LEFT JOIN main_dec_2014 ON (districts.congress_district_code = GEOID)
-  LEFT JOIN main_jun_2015 USING (GEOID)
-  LEFT JOIN main_dec_2015 USING (GEOID)
-  LEFT JOIN main_jun_2016 USING (GEOID)
-  LEFT JOIN main_dec_2016 USING (GEOID)
-  LEFT JOIN main_jun_2017 USING (GEOID)
-  LEFT JOIN main_dec_2017 USING (GEOID)
-  LEFT JOIN main_jun_2018 USING (GEOID)
-  LEFT JOIN main_dec_2018 USING (GEOID);
+  `bigquery-public-data.geo_us_boundaries.congress_district_116` districts
+  LEFT JOIN main_2020w1 ON (districts.geo_id = GEOID)
+  LEFT JOIN main_2020w2 USING (GEOID)
+  LEFT JOIN main_2020w3 USING (GEOID)
+  LEFT JOIN main_2020w4 USING (GEOID)
+  LEFT JOIN main_2020w5 USING (GEOID)
+  LEFT JOIN main_2020w6 USING (GEOID);

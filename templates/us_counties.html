@@ -79,17 +79,15 @@
                 }
             }
             const rows = [
-            // probably want to make 'year-month-week' a concat'ed field instead of y m w
-            // and name fields for median to include the daterange like below
-                ["2020 Week 1", "MED_download_Mbps", "MED_upload_Mbps"],
-                ["2020 Week 2", "ml_download_Mbps_jun_2015", "ml_upload_Mbps_jun_2015"],
-                ["2020 Week 3", "ml_download_Mbps_dec_2015", "ml_upload_Mbps_dec_2015"],
-                ["2020 Week 3", "ml_download_Mbps_jun_2016", "ml_upload_Mbps_jun_2016"],
-                ["Dec 2016", "ml_download_Mbps_dec_2016", "ml_upload_Mbps_dec_2016"],
-                ["Jun 2017", "ml_download_Mbps_jun_2017", "ml_upload_Mbps_jun_2017"],
-                ["Dec 2017", "ml_download_Mbps_dec_2017", "ml_upload_Mbps_dec_2017"],
-                ["Jun 2018", "ml_download_Mbps_jun_2018", "ml_upload_Mbps_jun_2018"],
-                ["Dec 2018", "ml_download_Mbps_dec_2018", "ml_upload_Mbps_dec_2018"],
+                ["2020-1-0", "MED_download_Mbps_2020w1", "MED_upload_Mbps_2020w1"],
+                ["2020-1-1", "MED_download_Mbps_2020w2", "MED_upload_Mbps_2020w2"],
+                ["2020-1-2", "MED_download_Mbps_2020w3", "MED_upload_Mbps_2020w3"],
+                ["2020-1-3", "MED_download_Mbps_2020w4", "MED_upload_Mbps_2020w4"],
+                ["2020-1-4", "MED_download_Mbps_2020w5", "MED_upload_Mbps_2020w5"],
+                ["2020-1-5", "MED_download_Mbps_2020w6", "MED_upload_Mbps_2020w6"],
+                ["2020-1-6", "MED_download_Mbps_2020w7", "MED_upload_Mbps_2020w7"],
+                ["2020-1-7", "MED_download_Mbps_2020w8", "MED_upload_Mbps_2020w8"],
+                ["2020-1-8", "MED_download_Mbps_2020w9", "MED_upload_Mbps_2020w9"],
             ];
             const formatRow = ([time, dl_key, ul_key]) =>
                 `<div class="report-date">${time}</div><div class="report-value">${rate(dl_key)}</div>` +
@@ -120,19 +118,19 @@
 
         var config = {
             time_periods: // time periods, as an array of [internalName, displayName]
-                [['w1_2020', 'Dec 29, 2019 - Jan 4, 2020'],
-                ['w2_2020', 'Jan 5-11, 2020'],
-                ['w3_2020', 'Jan 12-18, 2020'],
-                ['w4_2020', 'Jan 19-25, 2020'],
-                ['w5_2020', 'Jan 26 - Feb 1, 2020'],
-                ['w6_2020', 'Feb 2-8, 2020'],
-                ['w7_2020', 'Feb 9-15, 2020'],
-                ['w8_2020', 'Feb 16-22, 2020'],
-                ['w9_2020', 'Feb 23-29, 2020']],
-                ['w10_2020', 'Mar 1-7, 2020'],
-                ['w11_2020', 'Mar 8-14, 2020'],
-                ['w12_2020', 'Mar 15-21, 2020'],
-                ['w13_2020', 'Mar 22-28, 2020'],
+                [['2020w1', 'Dec 29, 2019 - Jan 4, 2020'],
+                ['2020w2', 'Jan 5-11, 2020'],
+                ['2020w3', 'Jan 12-18, 2020'],
+                ['2020w4', 'Jan 19-25, 2020'],
+                ['2020w5', 'Jan 26 - Feb 1, 2020'],
+                ['2020w6', 'Feb 2-8, 2020'],
+                ['2020w7', 'Feb 9-15, 2020'],
+                ['2020w8', 'Feb 16-22, 2020'],
+                ['2020w9', 'Feb 23-29, 2020']],
+                //['2020w10', 'Mar 1-7, 2020'],
+                //['2020w11', 'Mar 8-14, 2020'],
+                //['2020w12', 'Mar 15-21, 2020'],
+                //['2020w13', 'Mar 22-28, 2020'],
                 //['w14_2020', 'Jun 2018'],
                 //['w15_2020', 'Dec 2018']],
             state_centers: // jump-to-state info, an array of [displayName, [lon, lat, zoom]]
@@ -191,14 +189,10 @@
                     ["Wisconsin", [44.268543, -89.616508, 5]],
                     ["Wyoming", [42.755966, -107.302490], 5]],
             geo_units: // Array of dynamic layer info, [displayName, layerId, layerSrc, internalLayerName]
-
-// These are custom tilesets on the NA mapbox account. Do we change these to reference our custom tilesets in GCS?
                 [
-                    ['County', 'county', 'mapbox://newamerica.usbb_county', 'usbb_county'],
-                    ['Zip Code', 'zcta', 'mapbox://newamerica.usbb_zcta', 'usbb_zcta'],
-                    ['US Census Tracts', 'census_tracts', 'mapbox://newamerica.usbb_tract', 'usbb_tract'],
-                    ['State Senate Districts', 'state_senate', 'mapbox://newamerica.usbb_state_senate', 'usbb_state_senate'],
-                    ['State House Districts', 'state_house', 'mapbox://newamerica.usbb_state_house', 'usbb_state_house'],
+                    ['County', 'county', tiles: ["us_counties/", window.location) + "{z}/{x}/{y}.pbf", 'us_counties'],
+                    ['Zip Code', 'zcta', 'tiles: ["us_zipcodes/", window.location) + "{z}/{x}/{y}.pbf"', 'us_zipcodes'],
+                    ['US Congressional District', 'congress', 'tiles: ["us_congress/", window.location) + "{z}/{x}/{y}.pbf"', 'us_congress'],
                 ],
             ramps: // Array of display styling info, {displayName, internalName, mapboxGlStyleFn, stops, popupFn}
                 [mkRamp({
@@ -211,7 +205,7 @@
                             ['interpolate', ['linear'], ['get', `MED_download_Mbps_${timePeriod}`], ...stops],
                             '#808080'];
                     },
-                    maxTime: 'dec_2018',
+                    maxTime: '2020w9',
                     stops: [
                         -Infinity, '#cde5fa',
                         0.2, '#cde5fa',
@@ -231,7 +225,7 @@
                             ['interpolate', ['linear'], ['get', `MED_upload_Mbps_${timePeriod}`], ...stops],
                             '#808080'];
                     },
-                    maxTime: 'dec_2018',
+                    maxTime: '2020w9',
                     stops: [
                         -Infinity, '#cde5fa',
                         0.2, '#acd2e8',
@@ -244,15 +238,15 @@
                         100, '#004d47']
                 }), mkRamp({
                     displayName: 'M-Lab Min RTT',
-                    internalName: 'mlab_min_rtt',
+                    internalName: 'MED_DL_min_rtt',
                     popupFn: mlabPopupFn,
                     mapboxGlStyleFn(timePeriod, stops) {
                         return ['case', 
-                            ['has', `ml_min_rtt_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `ml_min_rtt_${timePeriod}`], ...stops],
+                            ['has', `MED_DL_min_rtt_${timePeriod}`],
+                            ['interpolate', ['linear'], ['get', `MED_DL_min_rtt_${timePeriod}`], ...stops],
                             '#808080'];
                     },
-                    maxTime: 'dec_2018',
+                    maxTime: '2020w9',
                     stops: [0, '#cde5fa',
                             5, '#dfa8a9',
                             10, '#c78c8c',
@@ -261,16 +255,16 @@
                             100, '#803a3c',
                             300, '#cde5fa']
                 }), mkRamp({
-                    displayName: 'MLab Download Test Count',
-                    internalName: 'mlab_dl_count_tests',
+                    displayName: 'M-Lab Download Test Count',
+                    internalName: 'dl_count_tests',
                     popupFn: mlabPopupFn,
                     mapboxGlStyleFn(timePeriod, stops) {
                         return ['case', 
-                            ['has', `ml_dl_count_tests_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `ml_dl_count_tests_${timePeriod}`], ...stops],
+                            ['has', `dl_count_tests_${timePeriod}`],
+                            ['interpolate', ['linear'], ['get', `dl_count_tests_${timePeriod}`], ...stops],
                             '#808080'];
                     },
-                    maxTime: 'dec_2018',
+                    maxTime: '2020w9',
                     stops: [100, '#cde5fa',
                             500, '#99c7dc',
                             1000, '#69a8bb',
@@ -278,16 +272,16 @@
                             10000, '#176b70',
                             25000, '#004d47']
                 }), mkRamp({
-                    displayName: 'MLab Upload Test Count',
-                    internalName: 'mlab_ul_count_tests',
+                    displayName: 'M-Lab Upload Test Count',
+                    internalName: 'ul_count_tests',
                     popupFn: mlabPopupFn,
                     mapboxGlStyleFn(timePeriod, stops) {
                         return ['case', 
-                            ['has', `ml_ul_count_tests_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `ml_ul_count_tests_${timePeriod}`], ...stops],
+                            ['has', `ul_count_tests_${timePeriod}`],
+                            ['interpolate', ['linear'], ['get', `ul_count_tests_${timePeriod}`], ...stops],
                             '#808080'];
                     },
-                    maxTime: 'dec_2018',
+                    maxTime: '2020w9',
                     stops: [100, '#cde5fa',
                             500, '#99c7dc',
                             1000, '#69a8bb',
@@ -295,16 +289,16 @@
                             10000, '#176b70',
                             25000, '#004d47']
                 }), mkRamp({
-                    displayName: 'MLab Unique Download IPs',
-                    internalName: 'mlab_dl_count_ips',
+                    displayName: 'M-Lab Unique Download IPs',
+                    internalName: 'dl_count_ips',
                     popupFn: mlabPopupFn,
                     mapboxGlStyleFn(timePeriod, stops) {
                         return ['case', 
-                            ['has', `ml_dl_count_ips_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `ml_dl_count_ips_${timePeriod}`], ...stops],
+                            ['has', `dl_count_ips_${timePeriod}`],
+                            ['interpolate', ['linear'], ['get', `dl_count_ips_${timePeriod}`], ...stops],
                             '#808080'];
                     },
-                    maxTime: 'dec_2018',
+                    maxTime: '2020w9',
                     stops: [100, '#cde5fa',
                             500, '#99c7dc',
                             1000, '#69a8bb',
@@ -312,126 +306,22 @@
                             10000, '#176b70',
                             25000, '#004d47']
                 }), mkRamp({
-                    displayName: 'MLab Unique Upload IPs',
-                    internalName: 'mlab_ul_count_ips',
+                    displayName: 'M-Lab Unique Upload IPs',
+                    internalName: 'ul_count_ips',
                     popupFn: mlabPopupFn,
                     mapboxGlStyleFn(timePeriod, stops) {
                         return ['case', 
-                            ['has', `ml_ul_count_ips_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `ml_ul_count_ips_${timePeriod}`], ...stops],
+                            ['has', `ul_count_ips_${timePeriod}`],
+                            ['interpolate', ['linear'], ['get', `ul_count_ips_${timePeriod}`], ...stops],
                             '#808080'];
                     },
-                    maxTime: 'dec_2018',
+                    maxTime: '2020w9',
                     stops: [100, '#cde5fa',
                             500, '#99c7dc',
                             1000, '#69a8bb',
                             5000, '#3d8997',
                             10000, '#176b70',
                             25000, '#004d47']
-                }), /*mkRamp({
-                    displayName: 'FCC Unique Provider Count',
-                    internalName: 'fcc_provider_count',
-                    popupFn: fccPopupFn,
-                    mapboxGlStyleFn(timePeriod, stops) {
-                        return ['case', 
-                            ['has', `fcc_reg_provider_count_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `fcc_reg_provider_count_${timePeriod}`], ...stops],
-                            '#808080'];
-                    }, 
-                    maxTime: 'dec_2017',
-                    stops: [0, '#fff',
-                            1, '#EED322',
-                            5, '#E6B71E',
-                            10, '#B86B25',
-                            25, '#8B4225',
-                            50, '#723122']
-                }),*/ mkRamp({
-                    displayName: 'FCC Advertised Download Speed',
-                    internalName: 'fcc_advertised_dl',
-                    popupFn: fccPopupFn,
-                    mapboxGlStyleFn(timePeriod, stops) {
-                        return ['case', 
-                            ['has', `fcc_advertised_down_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `fcc_advertised_down_${timePeriod}`], ...stops],
-                            '#808080'];
-                    },
-                    maxTime: 'dec_2017',
-                    stops: [
-                    -Infinity, '#cde5fa',
-                        0.2, '#cde5fa',
-                        4, '#78b2c6',
-                        10, '#5299a9',
-                        25, '#307f8a',
-                        50, '#12666a',
-                        100, '#004d47']
-                }), mkRamp({
-                    displayName: 'FCC Advertised Upload Speed',
-                    internalName: 'fcc_advertised_ul',
-                    popupFn: fccPopupFn,
-                    mapboxGlStyleFn(timePeriod, stops) {
-                        return ['case', 
-                            ['has', `fcc_advertised_up_${timePeriod}`],
-                            ['interpolate', ['linear'], ['get', `fcc_advertised_up_${timePeriod}`], ...stops],
-                            '#808080'];
-                    },
-                    maxTime: 'dec_2017',
-                    stops: [
-                        -Infinity, '#cde5fa',
-                        0.2, '#cde5fa',
-                        4, '#78b2c6',
-                        10, '#5299a9',
-                        25, '#307f8a',
-                        50, '#12666a',
-                        100, '#004d47']
-                }), mkRamp({
-                    displayName: 'Download Comparison (FCC - MLab)',
-                    internalName: 'mlab_fcc_dl_comp',
-                    popupFn: diffPopupFn,
-                    mapboxGlStyleFn(timePeriod, stops) {
-                        return ['case', 
-                            ['all', ['has', `fcc_advertised_down_${timePeriod}`], ['has', `ml_download_Mbps_${timePeriod}`]],
-                            ['interpolate',['linear'],
-                            ['-', ['get', `fcc_advertised_down_${timePeriod}`], ['get', `ml_download_Mbps_${timePeriod}`]],
-                            ...stops],'#808080'];
-                    },
-                    maxTime: 'dec_2017',
-                    stops: [
-                        -Infinity, '#690408',
-                        -25, '#96352d',
-                        -15, '#be6256',
-                        -10, '#e09287',
-                        -5, '#f7c7bf',
-                        -1, '#ffffff',
-                        1, '#d2cdf2',
-                        5, '#a39fdc',
-                        10, '#7374be',
-                        15, '#434d9b',
-                        25, '#002a74'
-                    ]
-                }), mkRamp({
-                    displayName: 'Upload Comparison (FCC - MLab)',
-                    internalName: 'mlab_fcc_ul_comp',
-                    popupFn: diffPopupFn,
-                    mapboxGlStyleFn(timePeriod, stops) {
-                        return ['case', 
-                            ['all', ['has', `fcc_advertised_down_${timePeriod}`], ['has', `ml_download_Mbps_${timePeriod}`]],
-                            ['interpolate',['linear'],
-                            ['-', ['get', `fcc_advertised_up_${timePeriod}`], ['get', `ml_upload_Mbps_${timePeriod}`]], ...stops], '#808080'];
-                    },
-                    maxTime: 'dec_2017',
-                    stops: [
-                        -Infinity, '#690408',
-                        -25, '#96352d',
-                        -15, '#be6256',
-                        -10, '#e09287',
-                        -5, '#f7c7bf',
-                        -1, '#ffffff',
-                        1, '#d2cdf2',
-                        5, '#a39fdc',
-                        10, '#7374be',
-                        15, '#434d9b',
-                        25, '#002a74'
-                    ]
                 })
                 ]
         };
@@ -535,23 +425,100 @@
 
 
 
-        map.on('load', function () {
-
+    map.on('load', function () {
+        for (const [_, id, url, sourceLayer] of config.geo_units) {
             map.addLayer({
-                "id": "us_counties",
-                "type": "line",
-                "source": {
-                    type: "vector",
-                    tiles: [
-                        new URL("/us_counties/", window.location) + "{z}/{x}/{y}.pbf"
-                    ]
-                },
-                "source-layer": "us_counties",
-                "paint": {
-                    'line-color': '#FF0000',
+                id,
+                type: "fill",
+                source: { url, type: "vector" },
+                "source-layer": sourceLayer,
+                layout: { visibility: 'none' },
+                paint: {
+                    'fill-opacity': 0.7
                 }
+            })
+
+            // Change the cursor to a pointer when the mouse is over the states layer.
+            map.on('mouseenter', id, () => {
+                map.getCanvas().style.cursor = 'pointer';
             });
+
+            // Change it back to a pointer when it leaves.
+            map.on('mouseleave', id, () => {
+                map.getCanvas().style.cursor = '';
+            });
+        }
+
+        map.addLayer({
+            "id": "us_states",
+            "type": "line",
+            "source": {
+                type: 'vector',
+                url: 'mapbox://newamerica.cjvopv39u05jt2wmna9mg5wz4-7j8om'
+               // tiles: ["/us_states/", window.location) + "{z}/{x}/{y}.pbf"
+            },
+            "layout": {
+                'visibility': 'visible'
+            },
+            "source-layer": "us_states",
+            "paint": {
+                "line-color": "#000",
+                "line-width": 0.5
+            }
         });
+
+        var popup = new mapboxgl.Popup({className: "popup-box"});
+
+        const layers = config.geo_units.map((g) => g[1]);
+        map.on('click', (e) => {
+            let f = map.queryRenderedFeatures(e.point, {layers});
+            if (f.length) {
+                console.log(f[0]);
+                popup.setLngLat(e.lngLat)
+                    .setHTML(popupFn(f[0].properties))
+                    .addTo(map);
+            }
+        });
+
+
+
+        // Read settings from URL, if any.
+        // :geo/:timeperiod/:measure/:x/:y/:z
+        let fragment = window.location.hash;
+        if (fragment) {
+            const check = (v, test) => test(v) ? v : undefined;
+
+            const parts = fragment.slice(1).split("/");
+            const geo = check(parts[0], (v) => config.geo_units.some((u) => u[1] == v));
+            const timeperiod = check(parts[1], (v) => config.time_periods.some((x) => x[0] == v));
+            const measure = check(parts[2], (v) => config.ramps.some((r) => r.internalName == v));
+            const x = check(Number(parts[3]), (v) => !Number.isNaN(v));
+            const y = check(Number(parts[4]), (v) => !Number.isNaN(v));
+            const z = check(Number(parts[5]), (v) => !Number.isNaN(v));
+
+            if (geo) {
+                const el = document.querySelector(`#geo [value='${geo}']`) || document.querySelector(`#geo :first-child`);
+                el.selected = true;
+            }
+            if (timeperiod !== undefined) {
+                const idx = config.time_periods.findIndex((x) => x[0] == timeperiod);
+                if (idx >= 0) {
+                    document.getElementById('slider').value = idx
+                };
+            }
+            if (measure) {
+                const el = document.querySelector(`#measurement [value='${measure}']`) || document.querySelector(`#measurement :first-child`);
+                el.selected = true;
+            }
+            if ([x, y, z].every(n => n !== undefined)) {
+                map.jumpTo({ center: [x, y], zoom: z });
+            }
+        }
+        // Run the color ramp to start
+        configureMap();
+
+        map.on('moveend', updateFragment);
+    });
     </script>
 
 </body>
