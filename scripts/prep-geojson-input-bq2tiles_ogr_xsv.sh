@@ -51,10 +51,10 @@ for val in ${query_jobs[@]}; do
       gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv
 
   # Merge any shareded csv exports and download the CSV files locally.
-  gsutil compose gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv gs://${PUB_LOC}/${RESULT_NAME}/csv/${RESULT_NAME}_final.csv
+  gsutil compose gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv gs://${GCS_STORAGE}/${RESULT_NAME}_final.csv
 
   # Fetch the CSV files that were just exported.
-  gsutil -m cp gs://${PUB_LOC}/${RESULT_NAME}/csv/${RESULT_NAME}_final.csv ./csv/
+  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_final.csv ./
 
   # Cleanup the files on GCS because we don't need them there anymore.
   gsutil rm -r gs://${GCS_STORAGE}
@@ -78,12 +78,16 @@ for val in ${query_jobs[@]}; do
       --coalesce-densest-as-needed \
       --no-tile-compression
 
-  # Upload to cloud storage publishing location
+  # Upload generated tile set to cloud storage publishing location
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
     cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/${RESULT_NAME}/
 
+  # Upload csv source data
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./maptiles/example.html gs://${PUB_LOC}/${RESULT_NAME}/index.html
+    cp -r ./${RESULT_NAME}_final.csv gs://${PUB_LOC}/${RESULT_NAME}/csv/${RESULT_NAME}.csv
+
+#  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+#    cp -r ./maptiles/example.html gs://${PUB_LOC}/${RESULT_NAME}/index.html
 
   # maptiles.mlab-sandbox.measurementlab.net
   # NOTE: if the html and tiles are served from different domains we'll need to
