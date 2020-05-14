@@ -71,4 +71,3 @@ week_agg AS (
 )
 SELECT * FROM week_agg
 JOIN counties ON GEOID = counties.geo_id
-ORDER BY GEOID, time_period

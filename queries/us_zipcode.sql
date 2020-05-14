@@ -66,4 +66,3 @@ week_agg AS (
 )
 SELECT * FROM week_agg
 JOIN zip_codes ON zipcode = zip_codes.zip_code
-ORDER BY zipcode, time_period

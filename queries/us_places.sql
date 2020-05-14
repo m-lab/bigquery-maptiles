@@ -64,4 +64,3 @@ week_agg AS (
 )
 SELECT * FROM week_agg
 JOIN us_places ON week_agg.geo_id = us_places.GEOID
-ORDER BY week_agg.geo_id, time_period

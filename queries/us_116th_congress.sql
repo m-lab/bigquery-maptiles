@@ -76,4 +76,3 @@ week_agg AS (
 )
 SELECT * FROM week_agg
 JOIN congress_district_116 ON GEOID = congress_district_116.geo_id
-ORDER BY GEOID, time_period
