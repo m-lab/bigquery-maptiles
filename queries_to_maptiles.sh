@@ -76,8 +76,8 @@ for val in ${query_jobs[@]}; do
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
     mv ./*.csv gs://${PUB_LOC}/csv/
 
-  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./templates/us_counties.html gs://${PUB_LOC}/index.html
+  #gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+  #  cp -r ./templates/us_counties.html gs://${PUB_LOC}/index.html
 
   # Final cleanup
 
