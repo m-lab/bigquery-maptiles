@@ -72,7 +72,7 @@ for val in ${query_jobs[@]}; do
   echo ${RESULT_NAME}_*.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
 
   # Let tippecanoe read all the geojson files into one layer.
-  tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -zg \
+  tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -z12 \
       --simplification=10 \
       --detect-shared-borders \
       --coalesce-densest-as-needed \
