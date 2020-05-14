@@ -50,11 +50,8 @@ for val in ${query_jobs[@]}; do
   bq extract --destination_format CSV "${QUALIFIED_TABLE}" \
       gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv
 
-  # Merge any shareded csv exports and download the CSV files locally.
-  gsutil compose gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv gs://${GCS_STORAGE}/${RESULT_NAME}_final.csv
-
   # Fetch the CSV files that were just exported.
-  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_final.csv ./
+  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv ./
 
   # Cleanup the files on GCS because we don't need them there anymore.
   gsutil rm -r gs://${GCS_STORAGE}
@@ -64,7 +61,7 @@ for val in ${query_jobs[@]}; do
   # the geometry. We pass all filenames to the inference script, but
   # it only reads the first one, since the schema should be consistent
   # for all of them.
-  scripts/infer_csvt_schema.sh ${RESULT_NAME}_final.csv > schema.csvt
+  scripts/infer_csvt_schema.sh ${RESULT_NAME}_*.csv > schema.csvt
 
   # Use xargs to convert all the csv files to geojson individually, in
   # parallel. We will aggregate them in the next step.  See csv_to_geojson
@@ -82,7 +79,9 @@ for val in ${query_jobs[@]}; do
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
     cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/${RESULT_NAME}/
 
-  # Upload csv source data
+  # Merge any shareded csv exports and upload csv source data
+  gsutil compose ./${RESULT_NAME}_*.csv ./${RESULT_NAME}_final.csv
+
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
     cp -r ./${RESULT_NAME}_final.csv gs://${PUB_LOC}/${RESULT_NAME}/csv/${RESULT_NAME}.csv
 
