@@ -17,9 +17,6 @@ for val in ${query_jobs[@]}; do
   QUERY="${RESULT_NAME}.sql"
   GCS_STORAGE="${RESULT_NAME}_temp"
 
-  # TODO: replace use of bq with a custom Go binary that runs the query and
-  # outputs the right format. Also open an HTTP port for Cloud Run.
-
   # Make a temporary table using a schema definition based on the
   # expected query output fields.
 
@@ -70,7 +67,7 @@ for val in ${query_jobs[@]}; do
   # Use xargs to convert all the csv files to geojson individually, in
   # parallel. We will aggregate them in the next step.  See csv_to_geojson
   # script for ogr2ogr args.
-  echo ${RESULT_NAME}.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
+  echo ${RESULT_NAME}_final.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
 
   # Let tippecanoe read all the geojson files into one layer.
   tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -z12 \
