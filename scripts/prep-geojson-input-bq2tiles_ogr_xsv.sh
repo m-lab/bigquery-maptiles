@@ -47,12 +47,8 @@ for val in ${query_jobs[@]}; do
   bq extract --destination_format CSV "${QUALIFIED_TABLE}" \
       gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv
 
-  # Merge sharded CSVs into one file
-  gsutil compose gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv \
-    gs://${GCS_STORAGE}/${RESULT_NAME}_final.csv
-
   # Fetch the CSV files that were just exported.
-  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_final.csv ./
+  gsutil -m cp gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv ./
 
   # Cleanup the files on GCS because we don't need them there anymore.
   gsutil rm -r gs://${GCS_STORAGE}
@@ -62,12 +58,12 @@ for val in ${query_jobs[@]}; do
   # the geometry. We pass all filenames to the inference script, but
   # it only reads the first one, since the schema should be consistent
   # for all of them.
-  scripts/infer_csvt_schema.sh ${RESULT_NAME}_final.csv > schema.csvt
+  scripts/infer_csvt_schema.sh ${RESULT_NAME}_*.csv > schema.csvt
 
   # Use xargs to convert all the csv files to geojson individually, in
   # parallel. We will aggregate them in the next step.  See csv_to_geojson
   # script for ogr2ogr args.
-  echo ${RESULT_NAME}_final.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
+  echo ${RESULT_NAME}_*.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
 
   # Let tippecanoe read all the geojson files into one layer.
   tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -z12 \
@@ -82,7 +78,7 @@ for val in ${query_jobs[@]}; do
 
   # Upload csv source data
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./${RESULT_NAME}_final.csv gs://${PUB_LOC}/${RESULT_NAME}/csv/
+    cp -r ./${RESULT_NAME}_*.csv gs://${PUB_LOC}/${RESULT_NAME}/csv/
 
 #  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
 #    cp -r ./maptiles/example.html gs://${PUB_LOC}/${RESULT_NAME}/index.html
