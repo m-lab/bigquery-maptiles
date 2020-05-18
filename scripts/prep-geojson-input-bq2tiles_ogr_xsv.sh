@@ -80,6 +80,9 @@ for val in ${query_jobs[@]}; do
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
     cp -r ./${RESULT_NAME}_*.csv gs://${PUB_LOC}/${RESULT_NAME}/csv/
 
+  # Cleanup local files 
+  rm -r schema.csvt ${RESULT_NAME}_* maptiles/*
+  
 #  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
 #    cp -r ./maptiles/example.html gs://${PUB_LOC}/${RESULT_NAME}/index.html
 
