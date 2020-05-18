@@ -9,7 +9,6 @@ QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
 
 declare -a query_jobs=("us_counties" "us_zipcode" "us_116th_congress" "us_aiannh")
-# "us_places"
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
@@ -82,7 +81,7 @@ for val in ${query_jobs[@]}; do
 
   # Cleanup local files 
   rm -r schema.csvt ${RESULT_NAME}_* maptiles/*
-  
+
 #  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
 #    cp -r ./maptiles/example.html gs://${PUB_LOC}/${RESULT_NAME}/index.html
 
