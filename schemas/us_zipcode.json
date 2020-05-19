@@ -1,218 +1,53 @@
 [
   {
     "mode": "NULLABLE",
-    "name": "dl_count_tests_2020w1",
+    "name": "zipcode",
+    "type": "INTEGER"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "time_period",
     "type": "STRING"
   },
   {
     "mode": "NULLABLE",
-    "name": "dl_count_ips_2020w1",
-    "type": "STRING"
+    "name": "dl_count_tests",
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
-    "name": "MED_download_Mbps_2020w1",
-    "type": "STRING"
+    "name": "dl_count_ips",
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
-    "name": "MED_DL_min_rtt_2020w1",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_tests_2020w1",
-    "type": "STRING"
+    "name": "MED_download_Mbps",
+    "type": "FLOAT"
   },  
   {
     "mode": "NULLABLE",
-    "name": "ul_count_ips_2020w1",
-    "type": "STRING"
+    "name": "MED_DL_min_rtt",
+    "type": "FLOAT"
   },
   {
     "mode": "NULLABLE",
-    "name": "MED_upload_Mbps_2020w1",
-    "type": "STRING"
+    "name": "ul_count_tests",
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
-    "name": "dl_count_tests_2020w2",
-    "type": "STRING"
+    "name": "ul_count_ips",
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
-    "name": "dl_count_ips_2020w2",
-    "type": "STRING"
+    "name": "MED_upload_Mbps",
+    "type": "FLOAT"
   },
   {
     "mode": "NULLABLE",
-    "name": "MED_download_Mbps_2020w2",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_DL_min_rtt_2020w2",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_tests_2020w2",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_ips_2020w2",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_upload_Mbps_2020w2",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_tests_2020w3",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_ips_2020w3",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_download_Mbps_2020w3",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_DL_min_rtt_2020w3",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_tests_2020w3",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_ips_2020w3",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_upload_Mbps_2020w3",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_tests_2020w4",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_ips_2020w4",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_download_Mbps_2020w4",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_DL_min_rtt_2020w4",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_tests_2020w4",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_ips_2020w4",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_upload_Mbps_2020w4",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_tests_2020w5",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_ips_2020w5",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_download_Mbps_2020w5",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_DL_min_rtt_2020w5",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_tests_2020w5",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_ips_2020w5",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_upload_Mbps_2020w5",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_tests_2020w6",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "dl_count_ips_2020w6",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_download_Mbps_2020w6",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_DL_min_rtt_2020w6",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_tests_2020w6",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "ul_count_ips_2020w6",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "MED_upload_Mbps_2020w6",
-    "type": "STRING"
-  },
-  {
-    "mode": "NULLABLE",
-    "name": "zipcode",
-    "type": "STRING"
+    "name": "zip_code",
+    "type": "INTEGER"
   },
   {
     "mode": "NULLABLE",
@@ -222,6 +57,61 @@
   {
     "mode": "NULLABLE",
     "name": "county",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "state_fips_code",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "state_code",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "state_name",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "fips_class_code",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "mtfcc_feature_class_code",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "functional_status",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "area_land_meters",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "area_water_meters",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "internal_point_lat",
+    "type": "STRING"
+  },                
+  {
+    "mode": "NULLABLE",
+    "name": "internal_point_lon",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "internal_point_geom",
     "type": "STRING"
   },
   {
