@@ -22,7 +22,7 @@ mlab_dl AS (
       EXTRACT(WEEK FROM test_date)) AS time_period,
     districts.geo_id AS GEOID
   FROM
-    `measurement-lab.library.ndt_unified_downloads` tests,
+    `measurement-lab.ndt.unified_downloads` tests,
     `bigquery-public-data.geo_us_boundaries.congress_district_116` districts
   WHERE
     client.Geo.country_name = "United States"
@@ -44,7 +44,7 @@ mlab_ul AS (
       EXTRACT(WEEK FROM test_date)) AS time_period,
     districts.geo_id AS GEOID
   FROM
-    `mlab-sandbox.library.ndt_unified_uploads` tests,
+    `measurement-lab.ndt.unified_uploads` tests,
     `bigquery-public-data.geo_us_boundaries.congress_district_116` districts
   WHERE
     client.Geo.country_name = "United States"
