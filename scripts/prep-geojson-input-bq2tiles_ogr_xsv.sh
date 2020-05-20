@@ -8,19 +8,19 @@ TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
 
-declare -a query_jobs=("us_counties" "us_zipcode" "us_116th_congress" "us_aiannh")
+declare -a query_jobs=("us_zipcode")
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
-  SCHEMA="${RESULT_NAME}.json"
+  SCHEMA="$(cat "schemas/${RESULT_NAME}.json")"
   QUERY="${RESULT_NAME}.sql"
   GCS_STORAGE="${RESULT_NAME}_temp"
 
   # Make a temporary table using a schema definition based on the
   # expected query output fields.
 
-  bq mk --table --expiration 3600 --description "temp table to store intermediate results before automated export" \
-    "${QUALIFIED_TABLE}" "schemas/${SCHEMA}"
+  #bq mk --table --expiration 3600 --description "temp table to store intermediate results before automated export" \
+  #  "${QUALIFIED_TABLE}" "schemas/${SCHEMA}"
 
   # Run bq query with generous row limit. Write results to temp table created above.
   # By default, bq fetches the query results to display in the shell, consuming a lot of memory.
@@ -67,7 +67,7 @@ for val in ${query_jobs[@]}; do
   # Let tippecanoe read all the geojson files into one layer.
   tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -zg \
       --simplification=10 \
-      --detect-shared-borders \
+      #--detect-shared-borders \
       --coalesce-densest-as-needed \
       --no-tile-compression
 
