@@ -19,9 +19,6 @@ for val in ${query_jobs[@]}; do
   # Make a temporary table using a schema definition based on the
   # expected query output fields.
 
-  #bq mk --table --expiration 3600 --description "temp table to store intermediate results before automated export" \
-  #  "${QUALIFIED_TABLE}" "schemas/${SCHEMA}"
-
   # Run bq query with generous row limit. Write results to temp table created above.
   # By default, bq fetches the query results to display in the shell, consuming a lot of memory.
   # Use --nosync to "fire-and-forget", then implement our own wait loop to defer the next command
@@ -68,6 +65,7 @@ for val in ${query_jobs[@]}; do
   tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -zg \
       --simplification=10 \
       #--detect-shared-borders \
+      --drop-densest-as-needed \
       --coalesce-densest-as-needed \
       --no-tile-compression
 

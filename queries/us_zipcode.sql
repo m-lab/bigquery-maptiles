@@ -1,10 +1,7 @@
 #standardSQL
 WITH zip_codes AS (
   SELECT
-    zip_code, city, county, state_fips_code, state_code, state_name,
-    fips_class_code, mtfcc_feature_class_code, functional_status, 
-    area_land_meters, area_water_meters, internal_point_lat, 
-    internal_point_lon, internal_point_geom, zip_code_geom AS WKT
+    zip_code, city, county, state_code, state_name, zip_code_geom AS WKT
   FROM `bigquery-public-data.geo_us_boundaries.zip_codes`
 ),
 mlab_dl AS (
