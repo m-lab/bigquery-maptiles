@@ -8,16 +8,18 @@ TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
 
-declare -a query_jobs=("us_zipcode")
+declare -a query_jobs=("us_state" \
+                    #  "us_counties" \
+                    #  "us_116th_congress" \
+                    #  "us_zipcode" \
+                      "us_aiannh"
+  )
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
   SCHEMA="$(cat "schemas/${RESULT_NAME}.json")"
   QUERY="${RESULT_NAME}.sql"
   GCS_STORAGE="${RESULT_NAME}_temp"
-
-  # Make a temporary table using a schema definition based on the
-  # expected query output fields.
 
   # Run bq query with generous row limit. Write results to temp table created above.
   # By default, bq fetches the query results to display in the shell, consuming a lot of memory.
@@ -62,12 +64,23 @@ for val in ${query_jobs[@]}; do
   echo ${RESULT_NAME}_*.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
 
   # Let tippecanoe read all the geojson files into one layer.
-  tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} *.geojson -zg \
+  if [ $RESULT_NAME = "us_zipcode"]; then 
+    tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} \
+      *.geojson -Z4 -z10 -d8 -D8 -m4 \
       --simplification=10 \
-      #--detect-shared-borders \
+      --detect-shared-borders \
       --drop-densest-as-needed \
       --coalesce-densest-as-needed \
       --no-tile-compression
+  else 
+    tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} \
+      *.geojson -zg \
+      --simplification=10 \
+      --detect-shared-borders \
+      --drop-densest-as-needed \
+      --coalesce-densest-as-needed \
+      --no-tile-compression
+  fi
 
   # Upload generated tile set to cloud storage publishing location
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
@@ -80,8 +93,8 @@ for val in ${query_jobs[@]}; do
   # Cleanup local files 
   rm -r schema.csvt ${RESULT_NAME}_* maptiles/*
 
-#  gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-#    cp -r ./maptiles/example.html gs://${PUB_LOC}/${RESULT_NAME}/index.html
+  # gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
+  # cp -r ./maptiles/example.html gs://${PUB_LOC}/${RESULT_NAME}/index.html
 
   # maptiles.mlab-sandbox.measurementlab.net
   # NOTE: if the html and tiles are served from different domains we'll need to
