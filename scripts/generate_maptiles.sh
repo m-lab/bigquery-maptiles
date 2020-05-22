@@ -17,7 +17,6 @@ declare -a query_jobs=("us_state" \
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
-  SCHEMA="$(cat "schemas/${RESULT_NAME}.json")"
   QUERY="${RESULT_NAME}.sql"
   GCS_STORAGE="${RESULT_NAME}_temp"
 
