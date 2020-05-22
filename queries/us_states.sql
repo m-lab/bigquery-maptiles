@@ -26,7 +26,7 @@ mlab_dl AS (
       ST_GeogPoint(
         client.Geo.longitude,
         client.Geo.latitude
-      ), states.WKT
+      ), states.state_geom
     )
     GROUP BY GEOID, time_period
 ),
@@ -48,7 +48,7 @@ mlab_ul AS (
       ST_GeogPoint(
         client.Geo.longitude,
         client.Geo.latitude
-      ), states.WKT
+      ), states.state_geom
     )
   GROUP BY GEOID, time_period
 ),
