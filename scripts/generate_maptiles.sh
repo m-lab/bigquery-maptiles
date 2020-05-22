@@ -8,7 +8,7 @@ TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
 
-declare -a query_jobs=("us_state" \
+declare -a query_jobs=("us_states" \
                     #  "us_counties" \
                     #  "us_116th_congress" \
                     #  "us_zipcode" \
