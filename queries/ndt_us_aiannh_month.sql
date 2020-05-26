@@ -20,7 +20,8 @@ mlab_dl AS (
     MAX(a.MeanThroughputMbps) AS MAX_download_Mbps,
     APPROX_QUANTILES(CAST(a.MinRTT AS FLOAT64), 100) [ORDINAL(50)] as MED_DL_min_rtt,
     CONCAT(EXTRACT(YEAR FROM test_date),"-", EXTRACT(MONTH FROM test_date)) AS time_period,
-    aiannh.geo_id AS GEOID
+    aiannh.geo_id AS GEOID,
+    CONCAT("US-",client.Geo.region) AS state
   FROM
     `measurement-lab.ndt.unified_downloads` tests, aiannh
   WHERE
@@ -32,7 +33,7 @@ mlab_dl AS (
         client.Geo.latitude
       ), aiannh.WKT
     )
-    GROUP BY GEOID, time_period
+    GROUP BY state, GEOID, time_period
 ),
 mlab_ul AS (
   SELECT
@@ -45,7 +46,8 @@ mlab_ul AS (
     APPROX_QUANTILES(a.MeanThroughputMbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(a.MeanThroughputMbps) AS MAX_upload_Mbps,
     CONCAT(EXTRACT(YEAR FROM test_date),"-", EXTRACT(MONTH FROM test_date)) AS time_period,
-    aiannh.geo_id AS GEOID
+    aiannh.geo_id AS GEOID,
+    CONCAT("US-",client.Geo.region) AS state
   FROM
     `measurement-lab.ndt.unified_uploads` tests, aiannh
   WHERE
@@ -57,7 +59,7 @@ mlab_ul AS (
         client.Geo.latitude
       ), aiannh.WKT
     )
-  GROUP BY GEOID, time_period
+  GROUP BY state, GEOID, time_period
 ),
 main AS (
   SELECT
