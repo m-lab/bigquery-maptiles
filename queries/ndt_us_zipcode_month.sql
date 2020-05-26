@@ -78,7 +78,7 @@ month_agg AS (
     LOWER_QUART_upload_Mbps, MED_upload_Mbps, MEAN_upload_Mbps, UPPER_QUART_upload_Mbps,
     MAX_upload_Mbps
   FROM main, months
-  WHERE main.time_period = weeks.time_period
+  WHERE main.time_period = months.time_period
 )
 SELECT * FROM month_agg
 JOIN zip_codes ON zipcode = zip_codes.zip_code

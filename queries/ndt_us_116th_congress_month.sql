@@ -16,6 +16,7 @@ mlab_dl AS (
   SELECT
     COUNT(a.UUID) AS dl_count_tests,
     COUNT(DISTINCT client.IP) AS dl_count_ips,
+    MIN(a.MeanThroughputMbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(a.MeanThroughputMbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(a.MeanThroughputMbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
     AVG(a.MeanThroughputMbps) AS MEAN_download_Mbps,
