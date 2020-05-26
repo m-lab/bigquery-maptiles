@@ -63,20 +63,20 @@ mlab_ul AS (
 ),
 main AS (
   SELECT
-    GEOID, state, time_period, dl_count_tests, dl_count_ips, MIN_download_Mbps, 
+    GEOID, mlab_dl.state, time_period, dl_count_tests, dl_count_ips, MIN_download_Mbps, 
     LOWER_QUART_download_Mbps, MED_download_Mbps, MEAN_download_Mbps, UPPER_QUART_download_Mbps,
     MAX_download_Mbps, MED_DL_min_rtt, ul_count_tests, ul_count_ips, MIN_upload_Mbps, 
     LOWER_QUART_upload_Mbps, MED_upload_Mbps, MEAN_upload_Mbps, UPPER_QUART_upload_Mbps,
     MAX_upload_Mbps
   FROM
-  mlab_dl JOIN mlab_ul USING (GEOID, time_period)
+  mlab_dl JOIN mlab_ul USING (GEOID, state, time_period)
 ),
 month_agg AS (
   WITH months AS (
     SELECT DISTINCT(time_period) FROM main
   )
   SELECT 
-    GEOID, state, main.time_period, dl_count_tests, dl_count_ips, MIN_download_Mbps, 
+    GEOID, main.state AS state, main.time_period, dl_count_tests, dl_count_ips, MIN_download_Mbps, 
     LOWER_QUART_download_Mbps, MED_download_Mbps, MEAN_download_Mbps, UPPER_QUART_download_Mbps,
     MAX_download_Mbps, MED_DL_min_rtt, ul_count_tests, ul_count_ips, MIN_upload_Mbps, 
     LOWER_QUART_upload_Mbps, MED_upload_Mbps, MEAN_upload_Mbps, UPPER_QUART_upload_Mbps,
