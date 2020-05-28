@@ -8,11 +8,11 @@ TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
 
-declare -a query_jobs=("us_states" \
-                    #  "us_counties" \
+declare -a query_jobs=("ndt_us_counties_week" \
+                    #  "us_states" \
                     #  "us_116th_congress" \
                     #  "us_zipcode" \
-                      "us_aiannh"
+                    #  "us_aiannh"
   )
 
 for val in ${query_jobs[@]}; do
