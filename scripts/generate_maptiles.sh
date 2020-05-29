@@ -8,7 +8,7 @@ TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
 
-declare -a query_jobs=("ndt_us_counties_week" \
+declare -a query_jobs=("us_counties_ndt_week" \
                     #  "us_states" \
                     #  "us_116th_congress" \
                     #  "us_zipcode" \
@@ -81,13 +81,16 @@ for val in ${query_jobs[@]}; do
       --no-tile-compression
   fi
 
+  # Define the GCS path based on the RESULT NAME.
+  PATHSTRING="$(echo ${RESULT_NAME//_//})"
+
   # Upload generated tile set to cloud storage publishing location
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/${RESULT_NAME}/
+    cp -r ./maptiles/${RESULT_NAME}/* gs://${PUB_LOC}/${PATHSTRING}/
 
   # Upload csv source data
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
-    cp -r ./${RESULT_NAME}_*.csv gs://${PUB_LOC}/${RESULT_NAME}/csv/
+    cp -r ./${RESULT_NAME}_*.csv gs://${PUB_LOC}/${PATHSTRING}/csv/
 
   # Cleanup local files 
   rm -r schema.csvt ${RESULT_NAME}_* maptiles/*
