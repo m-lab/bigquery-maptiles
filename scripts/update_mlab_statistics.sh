@@ -14,12 +14,16 @@ set -eux
 PROJECT="measurement-lab"
 USERNAME="critzo"
 
-declare -a query_jobs=("ndt_us_aiannh_month"  \
-                      #"ndt_us_states_month"   \
-                      #"ndt_us_counties_month" \
-                      #"ndt_us_zipcode_month"   \
-                      #"ndt_us_116th_congress_month" \
-                      
+declare -a query_jobs=("us_county_ndt_month" \
+                    "us_county_ndt_week"    \
+                    "us_state_ndt_month"    \
+                    "us_state_ndt_week"     \
+                    "us_congress_ndt_month" \
+                    "us_congress_ndt_week"  \
+                    "us_congress_ndt_month" \
+                    "us_congress_ndt_week"  \
+                    "us_aiannh_ndt_month"   \
+                    "us_aiannh_ndt_week"
   )
 
 for val in ${query_jobs[@]}; do
