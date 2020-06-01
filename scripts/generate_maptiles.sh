@@ -8,11 +8,16 @@ TABLE="${USERNAME}.temp"
 QUALIFIED_TABLE="${PROJECT}:${TABLE}"
 PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
 
-declare -a query_jobs=("us_counties_ndt_week" \
-                    #  "us_states" \
-                    #  "us_116th_congress" \
-                    #  "us_zipcode" \
-                    #  "us_aiannh"
+declare -a query_jobs=("us_county_ndt_month" \
+                    "us_county_ndt_week"    \
+                    "us_state_ndt_month"    \
+                    "us_state_ndt_week"     \
+                    "us_congress_ndt_month" \
+                    "us_congress_ndt_week"  \
+                    "us_congress_ndt_month" \
+                    "us_congress_ndt_week"  \
+                    "us_aiannh_ndt_month"   \
+                    "us_aiannh_ndt_week"
   )
 
 for val in ${query_jobs[@]}; do
