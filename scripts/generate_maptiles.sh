@@ -2,11 +2,8 @@
 
 set -eux
 
-PROJECT="${1:?Please provide a GCP project for tile upload}"
-USERNAME="critzo"
-TABLE="${USERNAME}.temp"
-QUALIFIED_TABLE="${PROJECT}:${TABLE}"
-PUB_LOC="maptiles.mlab-sandbox.measurementlab.net"
+TABLE="maptiles_temp.temp"
+PUB_LOC="maptiles.measurementlab.net"
 
 declare -a query_jobs=("us_county_ndt_month" \
                     "us_county_ndt_week"    \
@@ -29,9 +26,10 @@ for val in ${query_jobs[@]}; do
   # By default, bq fetches the query results to display in the shell, consuming a lot of memory.
   # Use --nosync to "fire-and-forget", then implement our own wait loop to defer the next command
   # until the table is populated.
+  gcloud config set project measurement-lab
 
-  JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
-    --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
+  JOB_ID=$(bq --nosync --project_id measurement-lab query \
+    --allow_large_results --destination_table "mlab_statistics.${RESULT_NAME}" \
     --replace --use_legacy_sql=false --max_rows=4000000 \
     "$(cat "queries/${QUERY}")")
 
@@ -46,7 +44,7 @@ for val in ${query_jobs[@]}; do
   gsutil mb gs://${GCS_STORAGE}
 
   # Generate CSV files; expected to include geometry info in WKT format.
-  bq extract --destination_format CSV "${QUALIFIED_TABLE}" \
+  bq extract --destination_format CSV "mlab_statistics.${RESULT_NAME}" \
       gs://${GCS_STORAGE}/${RESULT_NAME}_*.csv
 
   # Fetch the CSV files that were just exported.
@@ -54,7 +52,6 @@ for val in ${query_jobs[@]}; do
 
   # Cleanup the files on GCS because we don't need them there anymore.
   gsutil rm -r gs://${GCS_STORAGE}
-  bq rm -f ${QUALIFIED_TABLE}
 
   # ogr2ogr requires a schema file to know which csv column represents
   # the geometry. We pass all filenames to the inference script, but
@@ -88,6 +85,9 @@ for val in ${query_jobs[@]}; do
 
   # Define the GCS path based on the RESULT NAME.
   PATHSTRING="$(echo ${RESULT_NAME//_//})"
+
+  # Switch projects
+  gcloud config set project mlab-oti
 
   # Upload generated tile set to cloud storage publishing location
   gsutil -m -h 'Cache-Control:private, max-age=0, no-transform' \
