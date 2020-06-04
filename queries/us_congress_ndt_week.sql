@@ -16,6 +16,7 @@ dl AS (
   SELECT
     test_date,
     congress.GEOID AS GEOID,
+    CONCAT(client.Geo.country_code,"-",client.Geo.region) AS state,
     client.IP AS clientIP,
     a.MeanThroughputMbps AS mbps,
     a.MinRTT AS MinRTT
@@ -35,6 +36,7 @@ mlab_dl_perip_perday AS (
   SELECT
     test_date,
     GEOID,
+    state,
     clientIP,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
@@ -44,12 +46,13 @@ mlab_dl_perip_perday AS (
     MAX(mbps) AS MAX_download_Mbps,
     APPROX_QUANTILES(CAST(MinRTT AS FLOAT64), 100) [ORDINAL(50)] as MED_DL_min_rtt
   FROM dl
-  GROUP BY test_date, GEOID, clientIP
+  GROUP BY test_date, state, GEOID, clientIP
 ),
 congress_stats_dl AS (
   SELECT
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
-    GEOID, 
+    GEOID,
+    state, 
     MIN(MIN_download_Mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -58,21 +61,23 @@ congress_stats_dl AS (
     MAX(MAX_download_Mbps) AS MAX_download_Mbps,
     APPROX_QUANTILES(CAST(MED_DL_min_rtt AS FLOAT64), 100) [ORDINAL(50)] as MED_DL_min_rtt
   FROM mlab_dl_perip_perday
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),    
 congress_dl_sample AS (
   SELECT 
     COUNT(*) AS state_dl_sample_size,
     COUNT(DISTINCT clientIP) AS sample_dl_count_ips, 
-    GEOID, 
+    GEOID,
+    state, 
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
   FROM dl
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 ul AS (
   SELECT
     test_date,
     congress.GEOID AS GEOID,
+    CONCAT(client.Geo.country_code,"-",client.Geo.region) AS state,
     client.IP AS clientIP,
     a.MeanThroughputMbps AS mbps,
     a.MinRTT AS MinRTT
@@ -92,6 +97,7 @@ mlab_ul_perip_perday AS (
   SELECT
     test_date,
     GEOID,
+    state,
     clientIP,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
@@ -100,12 +106,13 @@ mlab_ul_perip_perday AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
   FROM ul
-  GROUP BY test_date, GEOID, clientIP
+  GROUP BY test_date, state, GEOID, clientIP
 ),
 congress_stats_ul AS (
   SELECT
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
-    GEOID, 
+    GEOID,
+    state, 
     MIN(MIN_upload_Mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -113,21 +120,23 @@ congress_stats_ul AS (
     APPROX_QUANTILES(UPPER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(MAX_upload_Mbps) AS MAX_upload_Mbps
   FROM mlab_ul_perip_perday
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),    
 congress_ul_sample AS (
   SELECT 
     COUNT(*) AS state_ul_sample_size,
     COUNT(DISTINCT clientIP) AS sample_ul_count_ips, 
     GEOID,
+    state,
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
   FROM ul
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 DL_pct_levels AS (
   SELECT 
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
     dl.GEOID,
+    dl.state,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsDL,
     COUNTIF(mbps < 4) / COUNT(*) AS pct_under_4mbpsDL,
     COUNTIF(mbps < 7) / COUNT(*) AS pct_under_7mbpsDL,
@@ -166,12 +175,13 @@ DL_pct_levels AS (
     COUNTIF(mbps > 900) / COUNT(*) AS pct_over_900mbpsDL,
     COUNTIF(mbps > 1000) / COUNT(*) AS pct_over_1000mbpsDL
   FROM dl
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 UL_pct_levels AS (
   SELECT 
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
     ul.GEOID,
+    ul.state,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsUL,
     COUNTIF(mbps < 4) / COUNT(*) AS pct_under_4mbpsUL,
     COUNTIF(mbps < 7) / COUNT(*) AS pct_under_7mbpsUL,
@@ -210,12 +220,12 @@ UL_pct_levels AS (
     COUNTIF(mbps > 900) / COUNT(*) AS pct_over_900mbpsUL,
     COUNTIF(mbps > 1000) / COUNT(*) AS pct_over_1000mbpsUL
   FROM ul
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 )
 SELECT * FROM congress_stats_dl
-JOIN congress_stats_ul USING (time_period, GEOID)
-JOIN congress_dl_sample USING (time_period, GEOID)
-JOIN congress_ul_sample USING (time_period, GEOID)
-JOIN DL_pct_levels USING (time_period, GEOID)
-JOIN UL_pct_levels USING (time_period, GEOID)
+JOIN congress_stats_ul USING (time_period, state, GEOID)
+JOIN congress_dl_sample USING (time_period, state, GEOID)
+JOIN congress_ul_sample USING (time_period, state, GEOID)
+JOIN DL_pct_levels USING (time_period, state, GEOID)
+JOIN UL_pct_levels USING (time_period, state, GEOID)
 JOIN congress USING (GEOID)

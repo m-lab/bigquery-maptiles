@@ -5,15 +5,9 @@ set -eux
 TABLE="maptiles_temp.temp"
 PUB_LOC="maptiles.measurementlab.net"
 
-declare -a query_jobs=("us_county_ndt_month" \
-                    "us_county_ndt_week"    \
-                    "us_state_ndt_month"    \
+declare -a query_jobs=("us_county_ndt_week"    \
                     "us_state_ndt_week"     \
-                    "us_congress_ndt_month" \
                     "us_congress_ndt_week"  \
-                    "us_zipcode_ndt_month" \
-                    "us_zipcode_ndt_week"  \
-                    "us_aiannh_ndt_month"   \
                     "us_aiannh_ndt_week"
   )
 
@@ -65,23 +59,13 @@ for val in ${query_jobs[@]}; do
   echo ${RESULT_NAME}_*.csv | xargs -n1 -P4 scripts/csv_to_geojson.sh 
 
   # Let tippecanoe read all the geojson files into one layer.
-  if [ $RESULT_NAME = "us_zipcode"]; then 
-    tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} \
-      *.geojson -Z4 -z10 -d8 -D8 -m4 \
-      --simplification=10 \
-      --detect-shared-borders \
-      --drop-densest-as-needed \
-      --coalesce-densest-as-needed \
-      --no-tile-compression
-  else 
-    tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} \
-      *.geojson -zg \
-      --simplification=10 \
-      --detect-shared-borders \
-      --drop-densest-as-needed \
-      --coalesce-densest-as-needed \
-      --no-tile-compression
-  fi
+  tippecanoe -e ./maptiles/${RESULT_NAME} -f -l ${RESULT_NAME} \
+    *.geojson -zg \
+    --simplification=10 \
+    --detect-shared-borders \
+    --drop-densest-as-needed \
+    --coalesce-densest-as-needed \
+    --no-tile-compression
 
   # Define the GCS path based on the RESULT NAME.
   PATHSTRING="$(echo ${RESULT_NAME//_//})"
