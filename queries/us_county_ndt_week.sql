@@ -17,7 +17,7 @@ dl AS (
   SELECT
     test_date,
     counties.GEOID AS GEOID,
-    state.state AS state,
+    CONCAT(client.Geo.country_code,"-",client.Geo.region) AS state,
     client.IP AS clientIP,
     a.MeanThroughputMbps AS mbps,
     a.MinRTT AS MinRTT
@@ -73,16 +73,17 @@ county_dl_sample AS (
   SELECT 
     COUNT(*) AS county_dl_sample_size,
     COUNT(DISTINCT clientIP) AS sample_dl_count_ips, 
+    state,
     GEOID, 
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
   FROM dl
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 ul AS (
   SELECT
     test_date,
     counties.GEOID AS GEOID,
-    state.state AS state,
+    CONCAT(client.Geo.country_code,"-",client.Geo.region) AS state,
     client.IP AS clientIP,
     a.MeanThroughputMbps AS mbps,
     a.MinRTT AS MinRTT
@@ -137,14 +138,16 @@ county_ul_sample AS (
     COUNT(*) AS county_ul_sample_size,
     COUNT(DISTINCT clientIP) AS sample_ul_count_ips, 
     GEOID,
+    state,
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
   FROM ul
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 DL_pct_levels AS (
   SELECT 
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
     dl.GEOID,
+    dl.state,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsDL,
     COUNTIF(mbps < 4) / COUNT(*) AS pct_under_4mbpsDL,
     COUNTIF(mbps < 7) / COUNT(*) AS pct_under_7mbpsDL,
@@ -183,12 +186,13 @@ DL_pct_levels AS (
     COUNTIF(mbps > 900) / COUNT(*) AS pct_over_900mbpsDL,
     COUNTIF(mbps > 1000) / COUNT(*) AS pct_over_1000mbpsDL
   FROM dl
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 UL_pct_levels AS (
   SELECT 
     CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
     ul.GEOID,
+    ul.state,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsUL,
     COUNTIF(mbps < 4) / COUNT(*) AS pct_under_4mbpsUL,
     COUNTIF(mbps < 7) / COUNT(*) AS pct_under_7mbpsUL,
@@ -227,12 +231,12 @@ UL_pct_levels AS (
     COUNTIF(mbps > 900) / COUNT(*) AS pct_over_900mbpsUL,
     COUNTIF(mbps > 1000) / COUNT(*) AS pct_over_1000mbpsUL
   FROM ul
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 )
 SELECT * FROM county_stats_dl
 JOIN county_stats_ul USING (time_period, state, GEOID)
-JOIN county_dl_sample USING (time_period, GEOID)
-JOIN county_ul_sample USING (time_period, GEOID)
-JOIN DL_pct_levels USING (time_period, GEOID)
-JOIN UL_pct_levels USING (time_period, GEOID)
+JOIN county_dl_sample USING (time_period, state, GEOID)
+JOIN county_ul_sample USING (time_period, state, GEOID)
+JOIN DL_pct_levels USING (time_period, state, GEOID)
+JOIN UL_pct_levels USING (time_period, state, GEOID)
 JOIN counties USING (GEOID)

@@ -19,7 +19,7 @@ dl AS (
   SELECT
     test_date,
     aiannh.GEOID AS GEOID,
-    state.state_name AS state,
+    CONCAT(client.Geo.country_code,"-",client.Geo.region) AS state,
     client.IP AS clientIP,
     a.MeanThroughputMbps AS mbps,
     a.MinRTT AS MinRTT
@@ -86,7 +86,7 @@ ul AS (
   SELECT
     test_date,
     aiannh.GEOID AS GEOID,
-    state.state_name AS state,
+    CONCAT(client.Geo.country_code,"-",client.Geo.region) AS state,
     client.IP AS clientIP,
     a.MeanThroughputMbps AS mbps,
     a.MinRTT AS MinRTT
