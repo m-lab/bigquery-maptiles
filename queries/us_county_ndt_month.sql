@@ -74,9 +74,10 @@ county_dl_sample AS (
     COUNT(*) AS county_dl_sample_size,
     COUNT(DISTINCT clientIP) AS sample_dl_count_ips, 
     GEOID, 
+    state,
     FORMAT_DATE("%Y%m", test_date) AS time_period
   FROM dl
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 ul AS (
   SELECT
@@ -137,9 +138,10 @@ county_ul_sample AS (
     COUNT(*) AS county_ul_sample_size,
     COUNT(DISTINCT clientIP) AS sample_ul_count_ips, 
     GEOID,
+    state,
     FORMAT_DATE("%Y%m", test_date) AS time_period
   FROM ul
-  GROUP BY time_period, GEOID
+  GROUP BY time_period, state, GEOID
 ),
 DL_pct_levels AS (
   SELECT 
