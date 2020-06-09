@@ -8,22 +8,16 @@
 #
 # This script will run the queries and save the results in:
 #   `measurement-lab.mlab_statistics.<table name>`
-
+#
+# Use this script for jobs that do not result in maptiles, only statistics.
+#
 set -eux
 
 PROJECT="measurement-lab"
 USERNAME="critzo"
 
-declare -a query_jobs=("us_county_ndt_month" \
-                    "us_county_ndt_week"    \
-                    "us_state_ndt_month"    \
-                    "us_state_ndt_week"     \
-                    "us_congress_ndt_month" \
-                    "us_congress_ndt_week"  \
-                    "us_congress_ndt_month" \
-                    "us_congress_ndt_week"  \
-                    "us_aiannh_ndt_month"   \
-                    "us_aiannh_ndt_week"
+declare -a query_jobs=("us_city_ndt_week"    \
+                    "us_city_ndt_month" 
   )
 
 for val in ${query_jobs[@]}; do
