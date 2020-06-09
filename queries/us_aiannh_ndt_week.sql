@@ -142,7 +142,26 @@ DL_pct_levels AS (
     COUNTIF(mbps < 700) / COUNT(*) AS pct_under_700mbpsDL, 
     COUNTIF(mbps < 800) / COUNT(*) AS pct_under_800mbpsDL,
     COUNTIF(mbps < 900) / COUNT(*) AS pct_under_900mbpsDL, 
-    COUNTIF(mbps < 1000) / COUNT(*) AS pct_under_1000mbpsDL
+    COUNTIF(mbps < 1000) / COUNT(*) AS pct_under_1000mbpsDL,
+    COUNTIF(mbps < 1) AS cnt_under_1mbpsDL,
+    COUNTIF(mbps < 3) AS cnt_under_3mbpsDL,
+    COUNTIF(mbps < 7) AS cnt_under_7mbpsDL,
+    COUNTIF(mbps < 10) AS cnt_under_10mbpsDL,
+    COUNTIF(mbps < 15) AS cnt_under_15mbpsDL,
+    COUNTIF(mbps < 25) AS cnt_under_25mbpsDL,
+    COUNTIF(mbps < 30) AS cnt_under_30mbpsDL,
+    COUNTIF(mbps < 50) AS cnt_under_50mbpsDL, 
+    COUNTIF(mbps < 100) AS cnt_under_100mbpsDL,
+    COUNTIF(mbps < 150) AS cnt_under_150mbpsDL, 
+    COUNTIF(mbps < 200) AS cnt_under_200mbpsDL,
+    COUNTIF(mbps < 300) AS cnt_under_300mbpsDL, 
+    COUNTIF(mbps < 400) AS cnt_under_400mbpsDL,
+    COUNTIF(mbps < 500) AS cnt_under_500mbpsDL,
+    COUNTIF(mbps < 600) AS cnt_under_600mbpsDL,
+    COUNTIF(mbps < 700) AS cnt_under_700mbpsDL, 
+    COUNTIF(mbps < 800) AS cnt_under_800mbpsDL,
+    COUNTIF(mbps < 900) AS cnt_under_900mbpsDL, 
+    COUNTIF(mbps < 1000) AS cnt_under_1000mbpsDL
   FROM dl
   GROUP BY time_period, GEOID
 ),
@@ -168,12 +187,31 @@ UL_pct_levels AS (
     COUNTIF(mbps < 700) / COUNT(*) AS pct_under_700mbpsUL, 
     COUNTIF(mbps < 800) / COUNT(*) AS pct_under_800mbpsUL,
     COUNTIF(mbps < 900) / COUNT(*) AS pct_under_900mbpsUL, 
-    COUNTIF(mbps < 1000) / COUNT(*) AS pct_under_1000mbpsUL
+    COUNTIF(mbps < 1000) / COUNT(*) AS pct_under_1000mbpsUL,
+    COUNTIF(mbps < 1) AS cnt_under_1mbpsUL,
+    COUNTIF(mbps < 3) AS cnt_under_3mbpsUL,
+    COUNTIF(mbps < 7) AS cnt_under_7mbpsUL,
+    COUNTIF(mbps < 10) AS cnt_under_10mbpsUL,
+    COUNTIF(mbps < 15) AS cnt_under_15mbpsUL,
+    COUNTIF(mbps < 25) AS cnt_under_25mbpsUL,
+    COUNTIF(mbps < 30) AS cnt_under_30mbpsUL,
+    COUNTIF(mbps < 50) AS cnt_under_50mbpsUL, 
+    COUNTIF(mbps < 100) AS cnt_under_100mbpsUL,
+    COUNTIF(mbps < 150) AS cnt_under_150mbpsUL, 
+    COUNTIF(mbps < 200) AS cnt_under_200mbpsUL,
+    COUNTIF(mbps < 300) AS cnt_under_300mbpsUL, 
+    COUNTIF(mbps < 400) AS cnt_under_400mbpsUL,
+    COUNTIF(mbps < 500) AS cnt_under_500mbpsUL,
+    COUNTIF(mbps < 600) AS cnt_under_600mbpsUL,
+    COUNTIF(mbps < 700) AS cnt_under_700mbpsUL, 
+    COUNTIF(mbps < 800) AS cnt_under_800mbpsUL,
+    COUNTIF(mbps < 900) AS cnt_under_900mbpsUL, 
+    COUNTIF(mbps < 1000) AS cnt_under_1000mbpsUL
   FROM ul
   GROUP BY time_period, GEOID
 )
 SELECT * FROM aiannh_stats_dl
-JOIN aiannh_stats_ul USING (time_period, GEOID
+JOIN aiannh_stats_ul USING (time_period, GEOID)
 JOIN aiannh_dl_sample USING (time_period, GEOID)
 JOIN aiannh_ul_sample USING (time_period, GEOID)
 JOIN DL_pct_levels USING (time_period, GEOID)
