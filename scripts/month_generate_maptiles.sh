@@ -5,7 +5,8 @@ set -eux
 TABLE="maptiles_temp.temp"
 PUB_LOC="maptiles.measurementlab.net"
 
-declare -a query_jobs=("us_county_ndt_month" \
+declare -a query_jobs=("us_city_ndt_month"    \
+                    "us_county_ndt_month" \
                     "us_state_ndt_month"    \
                     "us_congress_ndt_month" \
                     "us_aiannh_ndt_month"   
