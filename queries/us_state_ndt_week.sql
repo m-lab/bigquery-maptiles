@@ -19,6 +19,10 @@ dl AS (
   WHERE
     client.Geo.country_name = "United States"
     AND test_date >= '2020-01-01'
+    AND client.Geo.country_code IS NOT NULL 
+    AND client.Geo.country_code != "" 
+    AND client.Geo.region IS NOT NULL 
+    AND client.Geo.region != ""
     AND ST_WITHIN(
       ST_GeogPoint(
         client.Geo.longitude,
@@ -44,7 +48,10 @@ mlab_dl_perip_perday AS (
 ),
 state_stats_dl AS (
   SELECT
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     state, GEOID, 
     MIN(MIN_download_Mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
@@ -62,7 +69,10 @@ state_dl_sample AS (
     COUNT(DISTINCT clientIP) AS sample_dl_count_ips, 
     GEOID, 
     state,
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period
   FROM dl
   GROUP BY time_period, state, GEOID
 ),
@@ -79,6 +89,10 @@ ul AS (
   WHERE
     client.Geo.country_name = "United States"
     AND test_date >= '2020-01-01'
+    AND client.Geo.country_code IS NOT NULL 
+    AND client.Geo.country_code != "" 
+    AND client.Geo.region IS NOT NULL 
+    AND client.Geo.region != ""
     AND ST_WITHIN(
       ST_GeogPoint(
         client.Geo.longitude,
@@ -103,7 +117,10 @@ mlab_ul_perip_perday AS (
 ),
 state_stats_ul AS (
   SELECT
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     state, GEOID, 
     MIN(MIN_upload_Mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
@@ -120,13 +137,19 @@ state_ul_sample AS (
     COUNT(DISTINCT clientIP) AS sample_ul_count_ips, 
     GEOID,
     state,
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period
   FROM ul
   GROUP BY time_period, state, GEOID
 ),
 DL_pct_levels AS (
   SELECT 
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     dl.GEOID,
     dl.state,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsDL,
@@ -172,7 +195,10 @@ DL_pct_levels AS (
 ),
 UL_pct_levels AS (
   SELECT 
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     ul.GEOID,
     ul.state,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsUL,

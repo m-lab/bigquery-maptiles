@@ -44,7 +44,10 @@ mlab_dl_perip_perday AS (
 ),
 aiannh_stats_dl AS (
   SELECT
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     GEOID,
     MIN(MIN_download_Mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
@@ -61,7 +64,10 @@ aiannh_dl_sample AS (
     COUNT(*) AS aiannh_dl_sample_size,
     COUNT(DISTINCT clientIP) AS sample_dl_count_ips, 
     GEOID,
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period
   FROM dl
   GROUP BY time_period, GEOID
 ),
@@ -100,7 +106,10 @@ mlab_ul_perip_perday AS (
 ),
 aiannh_stats_ul AS (
   SELECT
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     GEOID,
     MIN(MIN_upload_Mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
@@ -116,13 +125,19 @@ aiannh_ul_sample AS (
     COUNT(*) AS aiannh_ul_sample_size,
     COUNT(DISTINCT clientIP) AS sample_ul_count_ips, 
     GEOID,
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period
   FROM ul
   GROUP BY time_period, GEOID
 ),
 DL_pct_levels AS (
   SELECT 
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     dl.GEOID,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsDL,
     COUNTIF(mbps < 3) / COUNT(*) AS pct_under_3mbpsDL,
@@ -167,7 +182,10 @@ DL_pct_levels AS (
 ),
 UL_pct_levels AS (
   SELECT 
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period,
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
     ul.GEOID,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsUL,
     COUNTIF(mbps < 3) / COUNT(*) AS pct_under_3mbpsUL,

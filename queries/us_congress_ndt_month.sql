@@ -25,6 +25,10 @@ dl AS (
   WHERE
     client.Geo.country_name = "United States"
     AND test_date >= '2020-01-01'
+    AND client.Geo.country_code IS NOT NULL 
+    AND client.Geo.country_code != "" 
+    AND client.Geo.region IS NOT NULL 
+    AND client.Geo.region != ""
     AND ST_WITHIN(
       ST_GeogPoint(
         client.Geo.longitude,
@@ -86,6 +90,10 @@ ul AS (
   WHERE
     client.Geo.country_name = "United States"
     AND test_date >= '2020-01-01'
+    AND client.Geo.country_code IS NOT NULL 
+    AND client.Geo.country_code != "" 
+    AND client.Geo.region IS NOT NULL 
+    AND client.Geo.region != ""
     AND ST_WITHIN(
       ST_GeogPoint(
         client.Geo.longitude,
