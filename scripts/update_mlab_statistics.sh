@@ -16,9 +16,13 @@ set -eux
 PROJECT="measurement-lab"
 USERNAME="critzo"
 
-declare -a query_jobs=("us_city_ndt_week"    \
-                    "us_city_ndt_month" 
-  )
+declare -a query_jobs=("us_city_ndt_week"     \
+                    "us_city_ndt_month"       \
+                    "country_city_ndt_month"  \
+                    "country_city_ndt_week"   \
+                    "country_region_ndt_month" \
+                    "country_region_ndt_week"
+)
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
