@@ -68,7 +68,48 @@ zipcode_dl_sample AS (
     COUNT(DISTINCT clientIP) AS sample_dl_count_ips, 
     zipcode,
     state, 
-    CONCAT(EXTRACT(ISOYEAR FROM test_date),EXTRACT(ISOWEEK FROM test_date)) AS time_period
+    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
+      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
+    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
+    END AS time_period,
+    COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsDL,
+    COUNTIF(mbps < 3) / COUNT(*) AS pct_under_3mbpsDL,
+    COUNTIF(mbps < 7) / COUNT(*) AS pct_under_7mbpsDL,
+    COUNTIF(mbps < 10) / COUNT(*) AS pct_under_10mbpsDL,
+    COUNTIF(mbps < 15) / COUNT(*) AS pct_under_15mbpsDL,
+    COUNTIF(mbps < 25) / COUNT(*) AS pct_under_25mbpsDL,
+    COUNTIF(mbps < 30) / COUNT(*) AS pct_under_30mbpsDL,
+    COUNTIF(mbps < 50) / COUNT(*) AS pct_under_50mbpsDL, 
+    COUNTIF(mbps < 100) / COUNT(*) AS pct_under_100mbpsDL,
+    COUNTIF(mbps < 150) / COUNT(*) AS pct_under_150mbpsDL, 
+    COUNTIF(mbps < 200) / COUNT(*) AS pct_under_200mbpsDL,
+    COUNTIF(mbps < 300) / COUNT(*) AS pct_under_300mbpsDL, 
+    COUNTIF(mbps < 400) / COUNT(*) AS pct_under_400mbpsDL,
+    COUNTIF(mbps < 500) / COUNT(*) AS pct_under_500mbpsDL,
+    COUNTIF(mbps < 600) / COUNT(*) AS pct_under_600mbpsDL,
+    COUNTIF(mbps < 700) / COUNT(*) AS pct_under_700mbpsDL, 
+    COUNTIF(mbps < 800) / COUNT(*) AS pct_under_800mbpsDL,
+    COUNTIF(mbps < 900) / COUNT(*) AS pct_under_900mbpsDL, 
+    COUNTIF(mbps < 1000) / COUNT(*) AS pct_under_1000mbpsDL,
+    COUNTIF(mbps < 1) AS cnt_under_1mbpsDL,
+    COUNTIF(mbps < 3) AS cnt_under_3mbpsDL,
+    COUNTIF(mbps < 7) AS cnt_under_7mbpsDL,
+    COUNTIF(mbps < 10) AS cnt_under_10mbpsDL,
+    COUNTIF(mbps < 15) AS cnt_under_15mbpsDL,
+    COUNTIF(mbps < 25) AS cnt_under_25mbpsDL,
+    COUNTIF(mbps < 30) AS cnt_under_30mbpsDL,
+    COUNTIF(mbps < 50) AS cnt_under_50mbpsDL, 
+    COUNTIF(mbps < 100) AS cnt_under_100mbpsDL,
+    COUNTIF(mbps < 150) AS cnt_under_150mbpsDL, 
+    COUNTIF(mbps < 200) AS cnt_under_200mbpsDL,
+    COUNTIF(mbps < 300) AS cnt_under_300mbpsDL, 
+    COUNTIF(mbps < 400) AS cnt_under_400mbpsDL,
+    COUNTIF(mbps < 500) AS cnt_under_500mbpsDL,
+    COUNTIF(mbps < 600) AS cnt_under_600mbpsDL,
+    COUNTIF(mbps < 700) AS cnt_under_700mbpsDL, 
+    COUNTIF(mbps < 800) AS cnt_under_800mbpsDL,
+    COUNTIF(mbps < 900) AS cnt_under_900mbpsDL, 
+    COUNTIF(mbps < 1000) AS cnt_under_1000mbpsDL
   FROM dl
   GROUP BY time_period, state, zipcode
 ),
@@ -137,67 +178,7 @@ zipcode_ul_sample AS (
     CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
       THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
     ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
-    END AS time_period
-  FROM ul
-  GROUP BY time_period, state, zipcode
-),
-DL_pct_levels AS (
-  SELECT 
-    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
-      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
-    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
     END AS time_period,
-    state,
-    zipcode,
-    COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsDL,
-    COUNTIF(mbps < 3) / COUNT(*) AS pct_under_3mbpsDL,
-    COUNTIF(mbps < 7) / COUNT(*) AS pct_under_7mbpsDL,
-    COUNTIF(mbps < 10) / COUNT(*) AS pct_under_10mbpsDL,
-    COUNTIF(mbps < 15) / COUNT(*) AS pct_under_15mbpsDL,
-    COUNTIF(mbps < 25) / COUNT(*) AS pct_under_25mbpsDL,
-    COUNTIF(mbps < 30) / COUNT(*) AS pct_under_30mbpsDL,
-    COUNTIF(mbps < 50) / COUNT(*) AS pct_under_50mbpsDL, 
-    COUNTIF(mbps < 100) / COUNT(*) AS pct_under_100mbpsDL,
-    COUNTIF(mbps < 150) / COUNT(*) AS pct_under_150mbpsDL, 
-    COUNTIF(mbps < 200) / COUNT(*) AS pct_under_200mbpsDL,
-    COUNTIF(mbps < 300) / COUNT(*) AS pct_under_300mbpsDL, 
-    COUNTIF(mbps < 400) / COUNT(*) AS pct_under_400mbpsDL,
-    COUNTIF(mbps < 500) / COUNT(*) AS pct_under_500mbpsDL,
-    COUNTIF(mbps < 600) / COUNT(*) AS pct_under_600mbpsDL,
-    COUNTIF(mbps < 700) / COUNT(*) AS pct_under_700mbpsDL, 
-    COUNTIF(mbps < 800) / COUNT(*) AS pct_under_800mbpsDL,
-    COUNTIF(mbps < 900) / COUNT(*) AS pct_under_900mbpsDL, 
-    COUNTIF(mbps < 1000) / COUNT(*) AS pct_under_1000mbpsDL,
-    COUNTIF(mbps < 1) AS cnt_under_1mbpsDL,
-    COUNTIF(mbps < 3) AS cnt_under_3mbpsDL,
-    COUNTIF(mbps < 7) AS cnt_under_7mbpsDL,
-    COUNTIF(mbps < 10) AS cnt_under_10mbpsDL,
-    COUNTIF(mbps < 15) AS cnt_under_15mbpsDL,
-    COUNTIF(mbps < 25) AS cnt_under_25mbpsDL,
-    COUNTIF(mbps < 30) AS cnt_under_30mbpsDL,
-    COUNTIF(mbps < 50) AS cnt_under_50mbpsDL, 
-    COUNTIF(mbps < 100) AS cnt_under_100mbpsDL,
-    COUNTIF(mbps < 150) AS cnt_under_150mbpsDL, 
-    COUNTIF(mbps < 200) AS cnt_under_200mbpsDL,
-    COUNTIF(mbps < 300) AS cnt_under_300mbpsDL, 
-    COUNTIF(mbps < 400) AS cnt_under_400mbpsDL,
-    COUNTIF(mbps < 500) AS cnt_under_500mbpsDL,
-    COUNTIF(mbps < 600) AS cnt_under_600mbpsDL,
-    COUNTIF(mbps < 700) AS cnt_under_700mbpsDL, 
-    COUNTIF(mbps < 800) AS cnt_under_800mbpsDL,
-    COUNTIF(mbps < 900) AS cnt_under_900mbpsDL, 
-    COUNTIF(mbps < 1000) AS cnt_under_1000mbpsDL
-  FROM dl
-  GROUP BY time_period, state, zipcode
-),
-UL_pct_levels AS (
-  SELECT 
-    CASE WHEN CHAR_LENGTH(CAST(EXTRACT(ISOWEEK FROM test_date) AS STRING)) < 2
-      THEN CONCAT(EXTRACT(ISOYEAR FROM test_date), "0", EXTRACT(ISOWEEK FROM test_date))
-    ELSE CONCAT(EXTRACT(ISOYEAR FROM test_date), EXTRACT(ISOWEEK FROM test_date))
-    END AS time_period,
-    state,
-    zipcode,
     COUNTIF(mbps < 1) / COUNT(*) AS pct_under_1mbpsUL,
     COUNTIF(mbps < 3) / COUNT(*) AS pct_under_3mbpsUL,
     COUNTIF(mbps < 7) / COUNT(*) AS pct_under_7mbpsUL,
@@ -243,6 +224,4 @@ SELECT * FROM zipcode_stats_dl
 JOIN zipcode_stats_ul USING (time_period, state, zipcode)
 JOIN zipcode_dl_sample USING (time_period, state, zipcode)
 JOIN zipcode_ul_sample USING (time_period, state, zipcode)
-JOIN DL_pct_levels USING (time_period, state, zipcode)
-JOIN UL_pct_levels USING (time_period, state, zipcode)
 JOIN zip_codes USING (zipcode)
