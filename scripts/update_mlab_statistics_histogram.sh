@@ -31,9 +31,9 @@ for val in ${query_jobs[@]}; do
   # Use --nosync to "fire-and-forget", then implement our own wait loop to defer the next command
   # until the table is populated.
 
-  while [ "$d" != 2020-06-17 ]; do 
+  while [ "$d" != 2020-06-17 ]; do
     JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
-      --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
+      --parameter=day::$d --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
       --append_table --use_legacy_sql=false --max_rows=4000000 \
       "$(cat "queries/${QUERY}")")
 
