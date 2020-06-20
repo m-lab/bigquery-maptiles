@@ -35,7 +35,7 @@ for val in ${query_jobs[@]}; do
 
   while [ "$startday" != "$endday" ]; do
     JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
-      --parameter=day::$d --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
+      --parameter=day::$startday --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
       --append_table --use_legacy_sql=false --max_rows=4000000 \
       "$(cat "queries/${QUERY}")")
 
@@ -46,7 +46,7 @@ for val in ${query_jobs[@]}; do
       sleep 30
     done
 
-    startday=$(date -I -d "$d + 1 day")
+    startday=$(date -I -d "$startday + 1 day")
   done
 
   # Automate stats and outputs by continent, country, region, etc. using query params.
