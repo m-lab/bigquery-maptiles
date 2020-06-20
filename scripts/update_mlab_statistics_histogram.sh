@@ -46,7 +46,7 @@ for val in ${query_jobs[@]}; do
       sleep 30
     done
 
-    d=$(date -I -d "$d + 1 day")
+    startday=$(date -I -d "$d + 1 day")
   done
 
   # Automate stats and outputs by continent, country, region, etc. using query params.
