@@ -15,11 +15,13 @@ set -eux
 
 PROJECT="measurement-lab"
 USERNAME="critzo"
+PUB_LOC="api.measurementlab.net"
 
-declare -a query_jobs=("continent_country_region_maxDL_histogram"
-)
 
-d=2020-01-01
+declare -a query_jobs=("continent_country_region_maxDL_histogram")
+
+startday=2020-01-01
+endday=2020-06-17
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
@@ -31,7 +33,7 @@ for val in ${query_jobs[@]}; do
   # Use --nosync to "fire-and-forget", then implement our own wait loop to defer the next command
   # until the table is populated.
 
-  while [ "$d" != 2020-06-17 ]; do
+  while [ "$startday" != "$endday" ]; do
     JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
       --parameter=day::$d --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
       --append_table --use_legacy_sql=false --max_rows=4000000 \
@@ -47,5 +49,69 @@ for val in ${query_jobs[@]}; do
     d=$(date -I -d "$d + 1 day")
   done
 
+  # Automate stats and outputs by continent, country, region, etc. using query params.
+  #   Get all combinations of continent, country, and region codes & save to a local csv.
+
+## TODO: need to output daily counts by geo by YEAR. 
+##       probably should make /YYYY/ the final GCS path.
+  declare -a location_combos_query=("get_continent_country_region_codes")
+
+  for v in ${location_combos_query[@]}; do
+    RESULT2_NAME="$v"
+    QUERY2="${RESULT2_NAME}.sql"
+
+    JOB_ID2=$(bq --format csv --nosync --project_id "${PROJECT}" query \
+    --parameter=day::$d --use_legacy_sql=false --max_rows=4000000 \
+    "$(cat "queries/${QUERY2}")" > codes.csv ) 
+
+    JOB_ID2="${JOB_ID#Successfully started query }"
+
+    until [ DONE == $(bq --format json show --job "${JOB_ID2}" | jq -r '.status.state') ]
+    do
+      sleep 30
+    done
+
+  done
+
+  # Loop through the csv lines, using three values as query parameters for a series of queries.
+
+  while IFS='' read -r LINE || [ -n "${LINE}" ]; do
+    IFS=',' read continent country region <<< "${LINE}"
+
+    declare -a iterating_codes=("export_continent_country_region_stats")
+
+    for loc in ${iterating_codes[@]}; do
+      RESULT3_NAME="$loc"
+      QUERY3="${RESULT3_NAME}.sql"
+
+      JOB_ID3=$(bq --nosync --project_id "${PROJECT}" query \
+      --parameter=table::$RESULT_NAME --parameter=continent_code::$continent \
+      --parameter=country_code::$country --parameter=region_code::$region \
+      --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
+      --destination_table "${USERNAME}.temp_${RESULT3_NAME}" \
+      --replace "$(cat "queries/${QUERY3}")" )
+
+      JOB_ID3="${JOB_ID#Successfully started query }"
+
+      until [ DONE == $(bq --format json show --job "${JOB_ID3}" | jq -r '.status.state') ]
+      do
+        sleep 30
+      done
+
+      # Switch to the M-Lab production project
+      gcloud config set project mlab-oti
+      
+      # Extract the rows to JSON and/or other output formats      
+      bq extract --destination_format JSON "${PROJECT}:${USERNAME}.${RESULT3_NAME}" \
+        gs://${PUB_LOC}/${continent_code}/${country_code}/${region_code}/maxDL_histogram.json
+
+      # Cleanup - remove temp table
+      # Switch to the M-Lab production project
+      gcloud config set project measurement-lab      
+      bq rm ${USERNAME}.temp_${RESULT3_NAME}
+
+    done
+
+  done
 
 done
