@@ -74,7 +74,7 @@ for val in ${query_jobs[@]}; do
       RESULT3_NAME="$loc"
       QUERY3="${RESULT3_NAME}.sql"
 
-      JOB_ID3=$(bq --nosync --project_id "${PROJECT}" query \
+      JOB_ID3=$(bq --nosync --project_id mlab-sandbox query \
       --parameter=continent_code::$continent \
       --parameter=country_code::$country --parameter=region_code::$region \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
