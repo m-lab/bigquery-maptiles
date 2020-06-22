@@ -94,7 +94,7 @@ for val in ${query_jobs[@]}; do
       gcloud config set project mlab-oti
       
       # Extract the rows to JSON and/or other output formats      
-      bq extract --destination_format=NEWLINE_DELIMITED_JSON "${PROJECT}:${USERNAME}.${RESULT3_NAME}" \
+      bq extract --destination_format=NEWLINE_DELIMITED_JSON "${USERNAME}.temp_${RESULT3_NAME}" \
         gs://${PUB_LOC}/${continent}/${country}/${region}/maxDL_histogram.json
 
       # Cleanup - remove temp table
