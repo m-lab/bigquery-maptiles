@@ -95,9 +95,15 @@ for val in ${query_jobs[@]}; do
         sleep 30
       done
 
+      sleep 20
+
+      echo $QUERY3
+
       # Extract the rows to JSON and/or other output formats      
       bq extract --destination_format=NEWLINE_DELIMITED_JSON "api_temp.temp_${RESULT3_NAME}" \
         gs://${PUB_LOC}/"${continent}"/"${country}"/"${region}"/maxDL_histogram.json
+
+      sleep 20
 
     done
 
