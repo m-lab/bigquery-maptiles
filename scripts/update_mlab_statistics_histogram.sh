@@ -68,7 +68,7 @@ for val in ${query_jobs[@]}; do
   # Loop through the csv lines, using three values as query parameters for a series of queries.
   declare -a iterating_codes=("export_continent_country_region_stats")
 
-  gcloud config set project mlab-sandbox
+  gcloud config set project mlab-oti
 
   while IFS=, read -r continent country region;
   do  
@@ -76,11 +76,11 @@ for val in ${query_jobs[@]}; do
       RESULT3_NAME="$loc"
       QUERY3="${RESULT3_NAME}.sql"
 
-      JOB_ID3=$(bq --nosync --project_id mlab-sandbox query \
+      JOB_ID3=$(bq --nosync --project_id mlab-oti query \
       --parameter=continent_code::$continent \
       --parameter=country_code::$country --parameter=region_code::$region \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
-      --destination_table "${USERNAME}.temp_${RESULT3_NAME}" \
+      --destination_table "api_temp.temp_${RESULT3_NAME}" \
       --replace "$(cat "queries/${QUERY3}")" )
 
       JOB_ID3="${JOB_ID3#Successfully started query }"
@@ -90,16 +90,13 @@ for val in ${query_jobs[@]}; do
         sleep 30
       done
 
-      # Switch to the M-Lab production project
-      gcloud config set project mlab-oti
-      
       # Extract the rows to JSON and/or other output formats      
-      bq extract --destination_format=NEWLINE_DELIMITED_JSON "mlab-sandbox.${USERNAME}.temp_${RESULT3_NAME}" \
+      bq extract --destination_format=NEWLINE_DELIMITED_JSON "api_temp.temp_${RESULT3_NAME}" \
         gs://${PUB_LOC}/${continent}/${country}/${region}/maxDL_histogram.json
 
       # Cleanup - remove temp table
-      bq rm ${USERNAME}.temp_${RESULT3_NAME}
-      gcloud config set project measurement-lab      
+      bq rm api_temp.temp_${RESULT3_NAME}
+      gcloud config set project measurement-lab
 
     done
 
