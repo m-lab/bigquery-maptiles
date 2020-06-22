@@ -76,24 +76,17 @@ for val in ${query_jobs[@]}; do
   do  
     QUERY3="export_continent_country_region_stats.sql"
 
-    region="$country-$region"
+    iso_region="$country-$region"
 
-    JOB_ID3=$(bq --nosync --project_id mlab-oti query \
+    bq --project_id mlab-oti query \
     --parameter=continent_code::$continent \
-    --parameter=country_code::$country --parameter=region_code::$region \
+    --parameter=country_code::$country --parameter=region_code::$iso_region \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
     --destination_table "api_temp.continent_country_region_stats" \
-    --replace "$(cat "queries/${QUERY3}")" )
-
-    JOB_ID3="${JOB_ID3#Successfully started query }"
-
-    until [ DONE == $(bq --format json show --job "${JOB_ID3}" | jq -r '.status.state') ]
-    do
-      sleep 30
-    done
+    --replace "$(cat "queries/${QUERY3}")"
 
     # Extract the rows to JSON and/or other output formats      
-    bq extract --destination_format=NEWLINE_DELIMITED_JSON api_temp.continent_country_region_stats \
+    bq extract --destination_format=NEWLINE_DELIMITED_JSON "api_temp.continent_country_region_stats" \
       gs://${PUB_LOC}/${continent}/${country}/${region}/maxDL_histogram.json
 
   done < codes.csv
