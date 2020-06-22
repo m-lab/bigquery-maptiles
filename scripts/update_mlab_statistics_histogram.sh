@@ -68,6 +68,8 @@ for val in ${query_jobs[@]}; do
   # Loop through the csv lines, using three values as query parameters for a series of queries.
   declare -a iterating_codes=("export_continent_country_region_stats")
 
+  gcloud config set project mlab-sandbox
+
   while IFS=, read -r continent country region;
   do  
     for loc in ${iterating_codes[@]}; do
