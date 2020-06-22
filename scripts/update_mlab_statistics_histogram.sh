@@ -83,7 +83,7 @@ for val in ${query_jobs[@]}; do
       --parameter=continent_code::$continent \
       --parameter=country_code::$country --parameter=region_code::$region \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
-      --destination_table "mlab-oti.api_temp.temp_${RESULT3_NAME}" \
+      --destination_table "api_temp.temp_${RESULT3_NAME}" \
       --replace "$(cat "queries/${QUERY3}")" )
 
       JOB_ID3="${JOB_ID3#Successfully started query }"
