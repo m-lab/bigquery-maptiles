@@ -93,12 +93,11 @@ for val in ${query_jobs[@]}; do
       
       # Extract the rows to JSON and/or other output formats      
       bq extract --destination_format JSON "${PROJECT}:${USERNAME}.${RESULT3_NAME}" \
-        gs://${PUB_LOC}/${continent_code}/${country_code}/${region_code}/maxDL_histogram.json
+        gs://${PUB_LOC}/${continent}/${country}/${region}/maxDL_histogram.json
 
       # Cleanup - remove temp table
-      # Switch to the M-Lab production project
-      gcloud config set project measurement-lab      
       bq rm ${USERNAME}.temp_${RESULT3_NAME}
+      gcloud config set project measurement-lab      
 
     done
 
