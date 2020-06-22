@@ -86,7 +86,7 @@ for val in ${query_jobs[@]}; do
     --replace "$(cat "queries/${QUERY3}")"
 
     # Extract the rows to JSON and/or other output formats      
-    bq extract --destination_format=NEWLINE_DELIMITED_JSON "api_temp.continent_country_region_stats" \
+    bq extract --destination_format=NEWLINE_DELIMITED_JSON mlab-oti:api_temp.continent_country_region_stats \
       gs://${PUB_LOC}/${continent}/${country}/${region}/maxDL_histogram.json
 
   done < codes.csv
