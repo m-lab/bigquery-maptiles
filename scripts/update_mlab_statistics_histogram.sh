@@ -61,7 +61,7 @@ for val in ${query_jobs[@]}; do
     QUERY2="${RESULT2_NAME}.sql"
 
     JOB_ID2=$(bq --format csv --nosync --project_id "${PROJECT}" query \
-    --parameter=day::$d --use_legacy_sql=false --max_rows=4000000 \
+    --use_legacy_sql=false --max_rows=4000000 \
     "$(cat "queries/${QUERY2}")" > codes.csv ) 
 
     JOB_ID2="${JOB_ID#Successfully started query }"
