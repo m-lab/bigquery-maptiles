@@ -66,17 +66,16 @@ for val in ${query_jobs[@]}; do
   done
 
   # Loop through the csv lines, using three values as query parameters for a series of queries.
+  declare -a iterating_codes=("export_continent_country_region_stats")
 
   while IFS=, read -r continent country region;
   do  
-    declare -a iterating_codes=("export_continent_country_region_stats")
-
     for loc in ${iterating_codes[@]}; do
       RESULT3_NAME="$loc"
       QUERY3="${RESULT3_NAME}.sql"
 
       JOB_ID3=$(bq --nosync --project_id "${PROJECT}" query \
-      --parameter=table::$RESULT_NAME --parameter=continent_code::$continent \
+      --parameter=table::$RESULT3_NAME --parameter=continent_code::$continent \
       --parameter=country_code::$country --parameter=region_code::$region \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
       --destination_table "${USERNAME}.temp_${RESULT3_NAME}" \
@@ -103,6 +102,6 @@ for val in ${query_jobs[@]}; do
 
     done
 
-  done
+  done < codes.csv
 
 done
