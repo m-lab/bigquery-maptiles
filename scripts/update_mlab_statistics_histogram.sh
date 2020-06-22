@@ -60,24 +60,15 @@ for val in ${query_jobs[@]}; do
     RESULT2_NAME="$v"
     QUERY2="${RESULT2_NAME}.sql"
 
-    JOB_ID2=$(bq --format csv --nosync --project_id "${PROJECT}" query \
+    JOB_ID2=$(bq --format=csv --project_id "${PROJECT}" query \
     --use_legacy_sql=false --max_rows=4000000 \
     "$(cat "queries/${QUERY2}")" > codes.csv ) 
-
-    JOB_ID2="${JOB_ID#Successfully started query }"
-
-    until [ DONE == $(bq --format json show --job "${JOB_ID2}" | jq -r '.status.state') ]
-    do
-      sleep 30
-    done
-
   done
 
   # Loop through the csv lines, using three values as query parameters for a series of queries.
 
-  while IFS='' read -r LINE || [ -n "${LINE}" ]; do
-    IFS=',' read continent country region <<< "${LINE}"
-
+  while IFS=, read -r continent country region;
+  do  
     declare -a iterating_codes=("export_continent_country_region_stats")
 
     for loc in ${iterating_codes[@]}; do
@@ -91,7 +82,7 @@ for val in ${query_jobs[@]}; do
       --destination_table "${USERNAME}.temp_${RESULT3_NAME}" \
       --replace "$(cat "queries/${QUERY3}")" )
 
-      JOB_ID3="${JOB_ID#Successfully started query }"
+      JOB_ID3="${JOB_ID3#Successfully started query }"
 
       until [ DONE == $(bq --format json show --job "${JOB_ID3}" | jq -r '.status.state') ]
       do
