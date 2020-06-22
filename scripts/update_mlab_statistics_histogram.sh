@@ -79,6 +79,8 @@ for val in ${query_jobs[@]}; do
       RESULT3_NAME="$loc"
       QUERY3="${RESULT3_NAME}.sql"
 
+      region="$country-$region"
+
       JOB_ID3=$(bq --nosync --project_id mlab-oti query \
       --parameter=continent_code::$continent \
       --parameter=country_code::$country --parameter=region_code::$region \
