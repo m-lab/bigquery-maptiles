@@ -65,6 +65,9 @@ for val in ${query_jobs[@]}; do
     "$(cat "queries/${QUERY2}")" > codes.csv ) 
   done
 
+  # bq exports csvs with a header. remove the header.
+  sed -i '' 1d codes.csv
+
   # Loop through the csv lines, using three values as query parameters for a series of queries.
   declare -a iterating_codes=("export_continent_country_region_stats")
 
@@ -80,7 +83,7 @@ for val in ${query_jobs[@]}; do
       --parameter=continent_code::$continent \
       --parameter=country_code::$country --parameter=region_code::$region \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
-      --destination_table "api_temp.temp_${RESULT3_NAME}" \
+      --destination_table "mlab-oti.api_temp.temp_${RESULT3_NAME}" \
       --replace "$(cat "queries/${QUERY3}")" )
 
       JOB_ID3="${JOB_ID3#Successfully started query }"
@@ -91,7 +94,7 @@ for val in ${query_jobs[@]}; do
       done
 
       # Extract the rows to JSON and/or other output formats      
-      bq extract --destination_format=NEWLINE_DELIMITED_JSON "api_temp.temp_${RESULT3_NAME}" \
+      bq extract --destination_format=NEWLINE_DELIMITED_JSON "mlab-oti.api_temp.temp_${RESULT3_NAME}" \
         gs://${PUB_LOC}/"${continent}"/"${country}"/"${region}"/maxDL_histogram.json
 
     done
