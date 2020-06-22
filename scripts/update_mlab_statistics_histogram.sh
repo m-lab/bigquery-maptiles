@@ -75,7 +75,7 @@ for val in ${query_jobs[@]}; do
       QUERY3="${RESULT3_NAME}.sql"
 
       JOB_ID3=$(bq --nosync --project_id "${PROJECT}" query \
-      --parameter=table::$RESULT3_NAME --parameter=continent_code::$continent \
+      --parameter=continent_code::$continent \
       --parameter=country_code::$country --parameter=region_code::$region \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
       --destination_table "${USERNAME}.temp_${RESULT3_NAME}" \
