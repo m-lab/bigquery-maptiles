@@ -92,14 +92,13 @@ for val in ${query_jobs[@]}; do
 
       # Extract the rows to JSON and/or other output formats      
       bq extract --destination_format=NEWLINE_DELIMITED_JSON "api_temp.temp_${RESULT3_NAME}" \
-        gs://${PUB_LOC}/${continent}/${country}/${region}/maxDL_histogram.json
-
-      # Cleanup - remove temp table
-      bq rm api_temp.temp_${RESULT3_NAME}
-      gcloud config set project measurement-lab
+        gs://${PUB_LOC}/"${continent}"/"${country}"/"${region}"/maxDL_histogram.json
 
     done
 
   done < codes.csv
+ 
+  gcloud config set project measurement-lab
+
 
 done
