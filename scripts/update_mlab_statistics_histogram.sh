@@ -66,7 +66,7 @@ for val in ${query_jobs[@]}; do
   done
 
   # bq exports csvs with a header. remove the header.
-  sed -i '' 1d codes.csv
+  sed -i '1d' codes.csv
 
   # Loop through the csv lines, using three values as query parameters for a series of queries.
   declare -a iterating_codes=("export_continent_country_region_stats")
