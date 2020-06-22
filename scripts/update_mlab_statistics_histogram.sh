@@ -74,7 +74,6 @@ for val in ${query_jobs[@]}; do
 
   while IFS=, read -r continent country region;
   do  
-    RESULT3_NAME="$loc"
     QUERY3="export_continent_country_region_stats.sql"
 
     region="$country-$region"
