@@ -18,10 +18,10 @@ USERNAME="critzo"
 PUB_LOC="api.measurementlab.net"
 
 
-declare -a query_jobs=("continent_country_region_maxDL_histogram")
+declare -a query_jobs=("continent_country_region_histogram")
 
-startday=2020-01-01
-endday=2020-06-17
+startday=2020-06-23
+endday=2020-06-23
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
@@ -35,7 +35,7 @@ for val in ${query_jobs[@]}; do
 
   while [ "$startday" != "$endday" ]; do
     JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
-      --parameter=day::$startday --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
+      --parameter='day::$startday' --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
       --append_table --use_legacy_sql=false --max_rows=4000000 \
       "$(cat "queries/${QUERY}")")
 
@@ -79,8 +79,8 @@ for val in ${query_jobs[@]}; do
     iso_region="$country-$region"
 
     bq --project_id mlab-oti query \
-    --parameter=continent_code::$continent \
-    --parameter=country_code::$country --parameter=region_code::$iso_region \
+    --parameter='continent_code::$continent' \
+    --parameter='country_code::$country' --parameter='region_code::$iso_region' \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
     --destination_table "api_temp.continent_country_region_stats" \
     --replace "$(cat "queries/${QUERY3}")"
