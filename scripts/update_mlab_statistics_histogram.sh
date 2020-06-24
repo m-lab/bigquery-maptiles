@@ -82,8 +82,8 @@ for val in ${query_jobs[@]}; do
 
     JOB_ID3=$(bq --nosync query \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
-    --destination_table "measurement-lab:mlab_statistics.temp_continent_country_region_stats" \
-    --replace "SELECT * FROM \`measurement-lab:mlab_statistics.continent_country_region_histogram\` WHERE continent_code = '${continent}' AND country_code = '${country}' AND ISO3166_2region1 = '${iso_region}'")
+    --destination_table "measurement-lab.mlab_statistics.temp_continent_country_region_stats" \
+    --replace "SELECT * FROM \`measurement-lab.mlab_statistics.continent_country_region_histogram\` WHERE continent_code = '${continent}' AND country_code = '${country}' AND ISO3166_2region1 = '${iso_region}'")
 
     JOB_ID3="${JOB_ID3#Successfully started query }"
 
@@ -94,7 +94,7 @@ for val in ${query_jobs[@]}; do
 
     # Extract the rows to JSON and/or other output formats      
     bq extract --destination_format NEWLINE_DELIMITED_JSON \
-      measurement-lab:mlab_statistics.temp_continent_country_region_stats \
+      measurement-lab.mlab_statistics.temp_continent_country_region_stats \
       gs://temp_generate_stats/${continent}/${country}/${region}/histogram_daily_stats.json      
 
   done < codes.csv
