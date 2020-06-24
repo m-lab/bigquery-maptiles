@@ -79,7 +79,7 @@ histogram_counts AS (
     country_code,
     country_name,
     ISO3166_2region1,
-    bucket_left AS bucket_min
+    bucket_left AS bucket_min,
     bucket_right AS bucket_max,
     COUNTIF(mbps < bucket_right AND mbps >= bucket_left) AS bucket_count
   FROM max_per_day_ip CROSS JOIN buckets
@@ -88,7 +88,8 @@ histogram_counts AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1, 
+    ISO3166_2region1,
+    bucket_min,
     bucket_max
 ),
 # Turn the counts into frequencies
