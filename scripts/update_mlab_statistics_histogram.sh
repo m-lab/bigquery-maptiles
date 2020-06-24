@@ -81,11 +81,9 @@ for val in ${query_jobs[@]}; do
     iso_region="$country-$region"
 
     JOB_ID3=$(bq --nosync query \
-    --parameter=continent_code::${continent} \
-    --parameter=country_code::${country} --parameter=region_code::${iso_region} \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
     --destination_table "measurement-lab:mlab_statistics.temp_continent_country_region_stats" \
-    --replace "SELECT * FROM \`mlab_statistics.continent_country_region_maxDL_histogram\` WHERE continent_code = @continent_code AND country_code = @country_code AND ISO3166_2region1 = CONCAT(@country_code, \"-\", @region_code)")
+    --replace "SELECT * FROM \`measurement-lab:mlab_statistics.continent_country_region_histogram\` WHERE continent_code = '${continent_code}' AND country_code = '${country_code}' AND ISO3166_2region1 = '${iso_region}'")
 
     JOB_ID3="${JOB_ID3#Successfully started query }"
 
