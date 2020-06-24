@@ -17,6 +17,8 @@ PROJECT="measurement-lab"
 USERNAME="critzo"
 PUB_LOC="api.measurementlab.net"
 
+# Initially set the project to measurement-lab.
+gcloud config set project measurement-lab
 
 declare -a query_jobs=("continent_country_region_histogram")
 
@@ -78,7 +80,7 @@ for val in ${query_jobs[@]}; do
 
     iso_region="$country-$region"
 
-    JOB_ID3=$(bq  --nosync --project_id mlab-oti query \
+    JOB_ID3=$(bq  --nosync --project_id measurement-lab query \
     --parameter=continent_code::${continent} \
     --parameter=country_code::${country} --parameter=region_code::${iso_region} \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
@@ -93,7 +95,7 @@ for val in ${query_jobs[@]}; do
     done
 
     # Extract the rows to JSON and/or other output formats      
-    bq extract --destination_format=NEWLINE_DELIMITED_JSON \
+    bq extract --destination_format NEWLINE_DELIMITED_JSON \
       measurement-lab:mlab_statistics.temp_continent_country_region_stats \
       gs://temp_generate_stats/${continent}/${country}/${region}/histogram_daily_stats.json      
 
