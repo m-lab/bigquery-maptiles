@@ -22,7 +22,7 @@ gcloud config set project measurement-lab
 
 declare -a query_jobs=("continent_country_region_histogram")
 
-startday=2020-06-23
+startday=2020-01-01
 endday=2020-06-23
 
 for val in ${query_jobs[@]}; do
@@ -114,7 +114,7 @@ done
 
 # Cleanup 
 ## Remove the temporary GCS bucket.
-#gsutil mb gs://temp_generate_stats
+gsutil rm -r gs://temp_generate_stats
 
 ## Remove local copies.
-# rm -r ./tmp/*
+rm -r ./tmp/*
