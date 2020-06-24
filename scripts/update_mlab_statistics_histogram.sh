@@ -76,16 +76,20 @@ for val in ${query_jobs[@]}; do
   # Loop through the csv lines, using three values as query parameters for a series of queries.
   while IFS=, read -r continent country region;
   do  
-    QUERY3="export_continent_country_region_stats.sql"
+    #QUERY3="export_continent_country_region_stats.sql"
 
     iso_region="$country-$region"
 
-    JOB_ID3=$(bq  --nosync --project_id measurement-lab query \
+    JOB_ID3=$(bq --nosync query \
     --parameter=continent_code::${continent} \
     --parameter=country_code::${country} --parameter=region_code::${iso_region} \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
     --destination_table "measurement-lab:mlab_statistics.temp_continent_country_region_stats" \
-    --replace "$(cat "queries/${QUERY3}")")
+    --replace "SELECT * FROM \
+      `measurement-lab.mlab_statistics.continent_country_region_maxDL_histogram` \
+      WHERE continent_code = @continent_code \
+      AND country_code = @country_code \
+      AND ISO3166_2region1 = CONCAT(@country_code, "-", @region_code)")
 
     JOB_ID3="${JOB_ID3#Successfully started query }"
 
