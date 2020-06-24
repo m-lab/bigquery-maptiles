@@ -68,10 +68,10 @@ for val in ${query_jobs[@]}; do
   # bq exports csvs with a header. remove the header.
   sed -i '1d' codes.csv
 
+  # Make a temporary GCS bucket to store results.
+  gsutil mb gs://temp_generate_stats
+
   # Loop through the csv lines, using three values as query parameters for a series of queries.
-
-  gcloud config set project mlab-oti
-
   while IFS=, read -r continent country region;
   do  
     QUERY3="export_continent_country_region_stats.sql"
@@ -82,7 +82,7 @@ for val in ${query_jobs[@]}; do
     --parameter=continent_code::${continent} \
     --parameter=country_code::${country} --parameter=region_code::${iso_region} \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
-    --destination_table "mlab-oti:api_temp.continent_country_region_stats" \
+    --destination_table "measurement-lab:mlab_statistics.temp_continent_country_region_stats" \
     --replace "$(cat "queries/${QUERY3}")")
 
     JOB_ID3="${JOB_ID3#Successfully started query }"
@@ -93,12 +93,28 @@ for val in ${query_jobs[@]}; do
     done
 
     # Extract the rows to JSON and/or other output formats      
-    bq extract --destination_format=NEWLINE_DELIMITED_JSON mlab-oti:api_temp.continent_country_region_stats \
-      gs://${PUB_LOC}/${continent}/${country}/${region}/histogram_daily_stats.json
+    bq extract --destination_format=NEWLINE_DELIMITED_JSON \
+      measurement-lab:mlab_statistics.temp_continent_country_region_stats \
+      gs://temp_generate_stats/${continent}/${country}/${region}/histogram_daily_stats.json      
 
   done < codes.csv
- 
+
+  # Copy the full list of generated stats from measurement-lab project temp GCS bucket
+  gsutil -m cp -r gs://temp_generate_stats ./tmp/
+
+  # Change to production project and copy generated stats to the public bucket.
+  gcloud config set project mlab-oti
+
+  gsutil -m cp -r ./tmp/* gs://${PUB_LOC}/
+
+  # Change back to the measurement-lab project for the next iteration.
   gcloud config set project measurement-lab
 
-
 done
+
+# Cleanup 
+## Remove the temporary GCS bucket.
+#gsutil mb gs://temp_generate_stats
+
+## Remove local copies.
+# rm -r ./tmp/*
