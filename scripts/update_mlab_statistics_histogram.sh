@@ -37,7 +37,7 @@ for val in ${query_jobs[@]}; do
 
   while [ "$startday" != "$endday" ]; do
     JOB_ID=$(bq --nosync --project_id "${PROJECT}" query \
-      --parameter=day::$startday --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
+      --parameter=startday::$startday --allow_large_results --destination_table "${QUALIFIED_TABLE}" \
       --append_table --use_legacy_sql=false --max_rows=4000000 \
       "$(cat "queries/${QUERY}")")
 
