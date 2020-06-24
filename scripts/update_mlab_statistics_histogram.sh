@@ -85,7 +85,7 @@ for val in ${query_jobs[@]}; do
     --destination_table "api_temp.continent_country_region_stats" \
     --replace "$(cat "queries/${QUERY3}")")
 
-    JOB_ID3="${JOB_ID#Successfully started query }"
+    JOB_ID3="${JOB_ID3#Successfully started query }"
 
     until [ DONE == $(bq --format json show --job "${JOB_ID3}" | jq -r '.status.state') ]
     do
