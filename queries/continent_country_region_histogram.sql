@@ -10,7 +10,7 @@ per_location AS (
     a.MeanThroughputMbps AS mbps,
     NET.SAFE_IP_FROM_STRING(Client.IP) AS ip
   FROM `measurement-lab.ndt.unified_downloads`
-  WHERE test_date = @day
+  WHERE test_date = @startday
 ),
 # With good locations and valid IPs
 per_location_cleaned AS (
