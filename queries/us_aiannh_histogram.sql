@@ -70,7 +70,6 @@ histogram_counts AS (
   SELECT 
     test_date,
     GEOID,
-    bucket_right AS bucket,
     bucket_left AS bucket_min,
     bucket_right AS bucket_max,
     COUNTIF(mbps < bucket_right AND mbps >= bucket_left) AS bucket_count
@@ -78,7 +77,8 @@ histogram_counts AS (
   GROUP BY 
     test_date,
     GEOID, 
-    bucket
+    bucket_min,
+    bucket_max
   ORDER BY 
     test_date,
     GEOID, 
