@@ -83,7 +83,7 @@ for val in ${query_jobs[@]}; do
     JOB_ID3=$(bq --nosync query \
     --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
     --destination_table "mlab_statistics.temp_continent_country_region_stats" \
-    --replace "SELECT * FROM \`mlab_statistics.continent_country_region_histogram\` WHERE continent_code = \"${continent}\" AND country_code = \"${country}\" AND ISO3166_2region1 = \"${iso_region}\"")
+    --replace "SELECT * FROM \`mlab_statistics.continent_country_region_histogram\` WHERE continent_code = \"${continent}\" AND country_code = \"${country}\" AND ISO3166_2region1 = \"${iso_region}\" ORDER BY test_date, continent_code, county_code, country_name, ISO3166_2region1, bucket_min, bucket_max, frac, samples")
 
     JOB_ID3="${JOB_ID3#Successfully started query }"
 
