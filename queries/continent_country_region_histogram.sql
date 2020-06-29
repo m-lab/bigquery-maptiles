@@ -1,6 +1,6 @@
 WITH
 # Select the initial set of results
-per_location AS (
+dl_per_location AS (
   SELECT
     test_date,
     client.Geo.continent_code AS continent_code,
@@ -13,7 +13,7 @@ per_location AS (
   WHERE test_date = @startday
 ),
 # With good locations and valid IPs
-per_location_cleaned AS (
+dl_per_location_cleaned AS (
   SELECT
     test_date,
     continent_code,
@@ -21,8 +21,8 @@ per_location_cleaned AS (
     country_name,
     ISO3166_2region1,
     mbps,
-    ip          
-  FROM per_location
+    ip
+  FROM dl_per_location
   WHERE 
     continent_code IS NOT NULL AND continent_code != ""
     AND country_code IS NOT NULL AND country_code != ""
@@ -30,8 +30,54 @@ per_location_cleaned AS (
     AND ISO3166_2region1 IS NOT NULL AND ISO3166_2region1 != ""
     AND ip IS NOT NULL
 ),
-# Maximum measured value per IP, per day 
-max_per_day_ip AS (
+# Gather descriptive statistics per geo, day, per ip
+dl_stats_perip_perday AS (
+  SELECT
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ip,
+    MIN(mbps) AS MIN_download_Mbps,
+    APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
+    APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
+    AVG(mbps) AS MEAN_download_Mbps,
+    APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
+    MAX(mbps) AS MAX_download_Mbps
+  FROM dl_per_location_cleaned
+  GROUP BY test_date, continent_code, country_code, country_name, ip
+),
+# Calculate final stats per day from 1x test per ip per day normalization in prev. step
+dl_stats_per_day AS (
+  SELECT 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    MIN(MIN_download_Mbps) AS MIN_download_Mbps,
+    APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
+    APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
+    AVG(MEAN_download_Mbps) AS MEAN_download_Mbps,
+    APPROX_QUANTILES(UPPER_QUART_download_Mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
+    MAX(MAX_download_Mbps) AS MAX_download_Mbps
+  FROM
+    dl_stats_perip_perday
+  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+),
+dl_total_samples_per_geo AS (
+  SELECT
+    test_date,
+    COUNT(*) AS dl_total_samples,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1
+  FROM dl_per_location_cleaned
+  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+),
+# Now generate daily histograms of Max DL Maximum measured value per IP, per day 
+max_dl_per_day_ip AS (
   SELECT 
     test_date,
     continent_code,
@@ -40,7 +86,7 @@ max_per_day_ip AS (
     ISO3166_2region1,
     ip,
     MAX(mbps) AS mbps
-  FROM per_location_cleaned
+  FROM dl_per_location_cleaned
   GROUP BY 
     test_date,
     continent_code,
@@ -50,7 +96,7 @@ max_per_day_ip AS (
     ip
 ),
 # Count the samples
-sample_counts AS (
+dl_sample_counts AS (
   SELECT 
     test_date,
     continent_code,
@@ -58,7 +104,7 @@ sample_counts AS (
     country_name,
     ISO3166_2region1,
     COUNT(*) AS samples
-  FROM max_per_day_ip
+  FROM max_dl_per_day_ip
   GROUP BY
     test_date,
     continent_code,
@@ -72,7 +118,7 @@ buckets AS (
   FROM UNNEST(GENERATE_ARRAY(0, 3, .2)) AS x
 ),
 # Count the samples that fall into each bucket
-histogram_counts AS (
+dl_histogram_counts AS (
   SELECT 
     test_date,
     continent_code,
@@ -82,7 +128,7 @@ histogram_counts AS (
     bucket_left AS bucket_min,
     bucket_right AS bucket_max,
     COUNTIF(mbps < bucket_right AND mbps >= bucket_left) AS bucket_count
-  FROM max_per_day_ip CROSS JOIN buckets
+  FROM max_dl_per_day_ip CROSS JOIN buckets
   GROUP BY 
     test_date,
     continent_code,
@@ -93,7 +139,7 @@ histogram_counts AS (
     bucket_max
 ),
 # Turn the counts into frequencies
-histogram AS (
+dl_histogram AS (
   SELECT 
     test_date,
     continent_code,
@@ -102,13 +148,168 @@ histogram AS (
     ISO3166_2region1, 
     bucket_min,
     bucket_max,
-    bucket_count / samples AS frac,
-    samples
+    bucket_count / samples AS dl_frac,
+    samples AS dl_samples
+  FROM histogram_counts 
+  JOIN sample_counts USING (test_date, continent_code, country_code,
+                            country_name, ISO3166_2region1)
+)
+# Repeat for Upload tests
+# Select the initial set of upload results
+ul_per_location AS (
+  SELECT
+    test_date,
+    client.Geo.continent_code AS continent_code,
+    client.Geo.country_code AS country_code,
+    client.Geo.country_name AS country_name,
+    CONCAT(client.Geo.country_code, '-', client.Geo.region) AS ISO3166_2region1,
+    a.MeanThroughputMbps AS mbps,
+    NET.SAFE_IP_FROM_STRING(Client.IP) AS ip
+  FROM `measurement-lab.ndt.unified_uploads`
+  WHERE test_date = @startday
+),
+# With good locations and valid IPs
+ul_per_location_cleaned AS (
+  SELECT
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    mbps,
+    ip
+  FROM ul_per_location
+  WHERE 
+    continent_code IS NOT NULL AND continent_code != ""
+    AND country_code IS NOT NULL AND country_code != ""
+    AND country_name IS NOT NULL AND country_name != ""
+    AND ISO3166_2region1 IS NOT NULL AND ISO3166_2region1 != ""
+    AND ip IS NOT NULL
+),
+# Gather descriptive statistics per geo, day, per ip
+ul_stats_perip_perday AS (
+  SELECT
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ip,
+    MIN(mbps) AS MIN_upload_Mbps,
+    APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
+    APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
+    AVG(mbps) AS MEAN_upload_Mbps,
+    APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
+    MAX(mbps) AS MAX_upload_Mbps
+  FROM dl_per_location_cleaned
+  GROUP BY test_date, continent_code, country_code, country_name, ip
+),
+# Calculate final stats per day from 1x test per ip per day normalization in prev. step
+ul_stats_per_day AS (
+  SELECT 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    MIN(MIN_upload_Mbps) AS MIN_upload_Mbps,
+    APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
+    APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
+    AVG(MEAN_upload_Mbps) AS MEAN_upload_Mbps,
+    APPROX_QUANTILES(UPPER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
+    MAX(MAX_upload_Mbps) AS MAX_upload_Mbps
+  FROM
+    ul_stats_perip_perday
+  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+),
+ul_total_samples_per_geo AS (
+  SELECT
+    test_date,
+    COUNT(*) AS ul_total_samples,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1
+  FROM ul_per_location_cleaned
+  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+),
+# Now generate daily histograms of Max DL Maximum measured value per IP, per day 
+max_ul_per_day_ip AS (
+  SELECT 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    ip,
+    MAX(mbps) AS mbps
+  FROM ul_per_location_cleaned
+  GROUP BY 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    ip
+),
+# Count the samples
+ul_sample_counts AS (
+  SELECT 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    COUNT(*) AS samples
+  FROM max_ul_per_day_ip
+  GROUP BY
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1  
+),
+# Count the samples that fall into each bucket
+ul_histogram_counts AS (
+  SELECT 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    bucket_left AS bucket_min,
+    bucket_right AS bucket_max,
+    COUNTIF(mbps < bucket_right AND mbps >= bucket_left) AS bucket_count
+  FROM max_ul_per_day_ip CROSS JOIN buckets
+  GROUP BY 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1,
+    bucket_min,
+    bucket_max
+),
+# Turn the counts into frequencies
+ul_histogram AS (
+  SELECT 
+    test_date,
+    continent_code,
+    country_code,
+    country_name,
+    ISO3166_2region1, 
+    bucket_min,
+    bucket_max,
+    bucket_count / samples AS ul_frac,
+    samples AS ul_samples
   FROM histogram_counts 
   JOIN sample_counts USING (test_date, continent_code, country_code,
                             country_name, ISO3166_2region1)
 )
 # Show the results
-SELECT * FROM histogram
-ORDER BY test_date, continent_code, country_code,
-         country_name, ISO3166_2region1, bucket_min, bucket_max
+SELECT * FROM dl_histogram
+JOIN ul_histogram USING (test_date, continent_code, country_code, country_name, ISO3166_2region1, bucket_min, bucket_max)
+JOIN dl_stats_per_day USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
+JOIN dl_total_samples_per_geo USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
+JOIN ul_stats_per_day USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
+JOIN ul_total_samples_per_geo USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
+ORDER BY test_date, continent_code, country_code, country_name, ISO3166_2region1, bucket_min, bucket_max
