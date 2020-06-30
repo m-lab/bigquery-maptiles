@@ -22,8 +22,10 @@ gcloud config set project measurement-lab
 
 declare -a query_jobs=("continent_country_region_networks")
 
-startday=2020-05-01
-endday=2020-05-31
+# TO DO: when this is run via a scheduled job, should query for the last day in the dataset
+#     and use that for startday/endday values
+startday=2020-01-01
+endday=2020-06-29
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
@@ -56,7 +58,7 @@ for val in ${query_jobs[@]}; do
 
 ## TODO: need to output daily counts by geo by YEAR. 
 ##       probably should make /YYYY/ the final GCS path.
-  declare -a location_combos_query=("get_continent_country_region_codes")
+  declare -a location_combos_query=("get_continent_country_region_codes_sample")
 
   for v in ${location_combos_query[@]}; do
     RESULT2_NAME="$v"
@@ -95,7 +97,7 @@ for val in ${query_jobs[@]}; do
     # Extract the rows to JSON and/or other output formats      
     bq extract --destination_format NEWLINE_DELIMITED_JSON \
       mlab_statistics.temp_continent_country_region_stats \
-      gs://temp_generate_stats/${continent}/${country}/${region}/histogram_daily_stats.json      
+      gs://temp_generate_stats/${continent}/${country}/${region}/networks_daily_stats.json
 
   done < codes.csv
 
