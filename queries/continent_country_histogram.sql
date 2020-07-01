@@ -6,7 +6,6 @@ dl_per_location AS (
     client.Geo.continent_code AS continent_code,
     client.Geo.country_code AS country_code,
     client.Geo.country_name AS country_name,
-    CONCAT(client.Geo.country_code, '-', client.Geo.region) AS ISO3166_2region1,
     a.MeanThroughputMbps AS mbps,
     NET.SAFE_IP_FROM_STRING(Client.IP) AS ip
   FROM `measurement-lab.ndt.unified_downloads`
@@ -19,15 +18,13 @@ dl_per_location_cleaned AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     mbps,
-    ip
+    ip          
   FROM dl_per_location
   WHERE 
     continent_code IS NOT NULL AND continent_code != ""
     AND country_code IS NOT NULL AND country_code != ""
     AND country_name IS NOT NULL AND country_name != ""
-    AND ISO3166_2region1 IS NOT NULL AND ISO3166_2region1 != ""
     AND ip IS NOT NULL
 ),
 # Gather descriptive statistics per geo, day, per ip
@@ -37,7 +34,6 @@ dl_stats_perip_perday AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     ip,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
@@ -46,7 +42,7 @@ dl_stats_perip_perday AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
     MAX(mbps) AS MAX_download_Mbps
   FROM dl_per_location_cleaned
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 # Calculate final stats per day from 1x test per ip per day normalization in prev. step
 dl_stats_per_day AS (
@@ -55,7 +51,6 @@ dl_stats_per_day AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_download_Mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -64,7 +59,7 @@ dl_stats_per_day AS (
     MAX(MAX_download_Mbps) AS MAX_download_Mbps
   FROM
     dl_stats_perip_perday
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY test_date, continent_code, country_code, country_name
 ),
 dl_total_samples_per_geo AS (
   SELECT
@@ -72,19 +67,17 @@ dl_total_samples_per_geo AS (
     COUNT(*) AS dl_total_samples,
     continent_code,
     country_code,
-    country_name,
-    ISO3166_2region1
+    country_name
   FROM dl_per_location_cleaned
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY test_date, continent_code, country_code, country_name
 ),
-# Now generate daily histograms of Max DL Maximum measured value per IP, per day 
+# Now generate daily histograms of Max DL
 max_dl_per_day_ip AS (
   SELECT 
     test_date,
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     ip,
     MAX(mbps) AS mbps
   FROM dl_per_location_cleaned
@@ -93,7 +86,6 @@ max_dl_per_day_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     ip
 ),
 # Count the samples
@@ -103,15 +95,13 @@ dl_sample_counts AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     COUNT(*) AS samples
   FROM max_dl_per_day_ip
   GROUP BY
     test_date,
     continent_code,
     country_code,
-    country_name,
-    ISO3166_2region1  
+    country_name  
 ),
 # Generate equal sized buckets in log-space
 buckets AS (
@@ -125,7 +115,6 @@ dl_histogram_counts AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     bucket_left AS bucket_min,
     bucket_right AS bucket_max,
     COUNTIF(mbps < bucket_right AND mbps >= bucket_left) AS bucket_count
@@ -135,7 +124,6 @@ dl_histogram_counts AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     bucket_min,
     bucket_max
 ),
@@ -146,14 +134,12 @@ dl_histogram AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1, 
     bucket_min,
     bucket_max,
     bucket_count / samples AS dl_frac,
     samples AS dl_samples
   FROM dl_histogram_counts 
-  JOIN dl_sample_counts USING (test_date, continent_code, country_code,
-                            country_name, ISO3166_2region1)
+  JOIN dl_sample_counts USING (test_date, continent_code, country_code, country_name)
 ),
 # Repeat for Upload tests
 # Select the initial set of upload results
@@ -163,7 +149,6 @@ ul_per_location AS (
     client.Geo.continent_code AS continent_code,
     client.Geo.country_code AS country_code,
     client.Geo.country_name AS country_name,
-    CONCAT(client.Geo.country_code, '-', client.Geo.region) AS ISO3166_2region1,
     a.MeanThroughputMbps AS mbps,
     NET.SAFE_IP_FROM_STRING(Client.IP) AS ip
   FROM `measurement-lab.ndt.unified_uploads`
@@ -176,15 +161,13 @@ ul_per_location_cleaned AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     mbps,
-    ip
+    ip          
   FROM ul_per_location
   WHERE 
     continent_code IS NOT NULL AND continent_code != ""
     AND country_code IS NOT NULL AND country_code != ""
     AND country_name IS NOT NULL AND country_name != ""
-    AND ISO3166_2region1 IS NOT NULL AND ISO3166_2region1 != ""
     AND ip IS NOT NULL
 ),
 # Gather descriptive statistics per geo, day, per ip
@@ -194,7 +177,6 @@ ul_stats_perip_perday AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     ip,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
@@ -202,8 +184,8 @@ ul_stats_perip_perday AS (
     AVG(mbps) AS MEAN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
-  FROM dl_per_location_cleaned
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  FROM ul_per_location_cleaned
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 # Calculate final stats per day from 1x test per ip per day normalization in prev. step
 ul_stats_per_day AS (
@@ -212,7 +194,6 @@ ul_stats_per_day AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_upload_Mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -221,7 +202,7 @@ ul_stats_per_day AS (
     MAX(MAX_upload_Mbps) AS MAX_upload_Mbps
   FROM
     ul_stats_perip_perday
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY test_date, continent_code, country_code, country_name
 ),
 ul_total_samples_per_geo AS (
   SELECT
@@ -229,19 +210,17 @@ ul_total_samples_per_geo AS (
     COUNT(*) AS ul_total_samples,
     continent_code,
     country_code,
-    country_name,
-    ISO3166_2region1
+    country_name
   FROM ul_per_location_cleaned
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY test_date, continent_code, country_code, country_name
 ),
-# Now generate daily histograms of Max DL Maximum measured value per IP, per day 
+# Now generate daily histograms of Max UL
 max_ul_per_day_ip AS (
   SELECT 
     test_date,
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     ip,
     MAX(mbps) AS mbps
   FROM ul_per_location_cleaned
@@ -250,7 +229,6 @@ max_ul_per_day_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     ip
 ),
 # Count the samples
@@ -260,15 +238,13 @@ ul_sample_counts AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     COUNT(*) AS samples
   FROM max_ul_per_day_ip
   GROUP BY
     test_date,
     continent_code,
     country_code,
-    country_name,
-    ISO3166_2region1  
+    country_name  
 ),
 # Count the samples that fall into each bucket
 ul_histogram_counts AS (
@@ -277,7 +253,6 @@ ul_histogram_counts AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     bucket_left AS bucket_min,
     bucket_right AS bucket_max,
     COUNTIF(mbps < bucket_right AND mbps >= bucket_left) AS bucket_count
@@ -287,7 +262,6 @@ ul_histogram_counts AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     bucket_min,
     bucket_max
 ),
@@ -298,14 +272,12 @@ ul_histogram AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1, 
     bucket_min,
     bucket_max,
     bucket_count / samples AS ul_frac,
     samples AS ul_samples
   FROM ul_histogram_counts 
-  JOIN ul_sample_counts USING (test_date, continent_code, country_code,
-                            country_name, ISO3166_2region1)
+  JOIN ul_sample_counts USING (test_date, continent_code, country_code, country_name)
 ),
 ## Rolling stats (past x days from each day)
 last7d_down AS (
@@ -318,7 +290,6 @@ last7d_down_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -326,14 +297,13 @@ last7d_down_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
     MAX(mbps) AS MAX_download_Mbps
   FROM last7d_down
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d7_download AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_download_Mbps) AS d7_MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS d7_LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS d7_MED_download_Mbps,
@@ -342,7 +312,7 @@ d7_download AS (
     MAX(MAX_download_Mbps) AS d7_MAX_download_Mbps,
     STDDEV(MAX_download_Mbps) AS d7_STDEV_max_dl
   FROM last7d_down_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last7d_up AS (
   SELECT * FROM ul_per_location_cleaned
@@ -354,7 +324,6 @@ last7d_up_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -362,14 +331,13 @@ last7d_up_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
   FROM last7d_up
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d7_upload AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_upload_Mbps) AS d7_MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS d7_LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS d7_MED_upload_Mbps,
@@ -378,7 +346,7 @@ d7_upload AS (
     MAX(MAX_upload_Mbps) AS d7_MAX_upload_Mbps,
     STDDEV(MAX_upload_Mbps) AS d7_STDEV_max_ul
   FROM last7d_up_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last30d_down AS (
   SELECT * FROM dl_per_location_cleaned
@@ -390,7 +358,6 @@ last30d_down_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -398,14 +365,13 @@ last30d_down_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
     MAX(mbps) AS MAX_download_Mbps
   FROM last30d_down
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d30_download AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_download_Mbps) AS d30_MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS d30_LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS d30_MED_download_Mbps,
@@ -414,7 +380,7 @@ d30_download AS (
     MAX(MAX_download_Mbps) AS d30_MAX_download_Mbps,
     STDDEV(MAX_download_Mbps) AS d30_STDEV_max_dl
   FROM last30d_down_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last30d_up AS (
   SELECT * FROM ul_per_location_cleaned
@@ -426,7 +392,6 @@ last30d_up_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -434,14 +399,13 @@ last30d_up_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
   FROM last30d_up
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d30_upload AS ( 
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_upload_Mbps) AS d30_MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS d30_LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS d30_MED_upload_Mbps,
@@ -450,7 +414,7 @@ d30_upload AS (
     MAX(MAX_upload_Mbps) AS d30_MAX_upload_Mbps,
     STDDEV(MAX_upload_Mbps) AS d30_STDEV_max_ul
   FROM last30d_up_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last60d_down AS (
   SELECT * FROM dl_per_location_cleaned
@@ -462,7 +426,6 @@ last60d_down_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -470,14 +433,13 @@ last60d_down_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
     MAX(mbps) AS MAX_download_Mbps
   FROM last60d_down
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d60_download AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_download_Mbps) AS d60_MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS d60_LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS d60_MED_download_Mbps,
@@ -486,7 +448,7 @@ d60_download AS (
     MAX(MAX_download_Mbps) AS d60_MAX_download_Mbps,
     STDDEV(MAX_download_Mbps) AS d60_STDEV_max_dl
   FROM last60d_down_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last60d_up AS (
   SELECT * FROM ul_per_location_cleaned
@@ -498,7 +460,6 @@ last60d_up_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -506,14 +467,13 @@ last60d_up_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
   FROM last60d_up
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d60_upload AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_upload_Mbps) AS d60_MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS d60_LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS d60_MED_upload_Mbps,
@@ -522,7 +482,7 @@ d60_upload AS (
     MAX(MAX_upload_Mbps) AS d60_MAX_upload_Mbps,
     STDDEV(MAX_upload_Mbps) AS d60_STDEV_max_ul
   FROM last60d_up_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last90d_down AS (
   SELECT * FROM dl_per_location_cleaned
@@ -534,7 +494,6 @@ last90d_down_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -542,14 +501,13 @@ last90d_down_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
     MAX(mbps) AS MAX_download_Mbps
   FROM last90d_down
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d90_download AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_download_Mbps) AS d90_MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS d90_LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS d90_MED_download_Mbps,
@@ -558,7 +516,7 @@ d90_download AS (
     MAX(MAX_download_Mbps) AS d90_MAX_download_Mbps,
     STDDEV(MAX_download_Mbps) AS d90_STDEV_max_dl
   FROM last90d_down_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last90d_up AS (
   SELECT * FROM ul_per_location_cleaned
@@ -570,7 +528,6 @@ last90d_up_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -578,14 +535,13 @@ last90d_up_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
   FROM last90d_up
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d90_upload AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_upload_Mbps) AS d90_MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS d90_LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS d90_MED_upload_Mbps,
@@ -594,7 +550,7 @@ d90_upload AS (
     MAX(MAX_upload_Mbps) AS d90_MAX_upload_Mbps,
     STDDEV(MAX_upload_Mbps) AS d90_STDEV_max_ul
   FROM last90d_up_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last180d_down AS (
   SELECT * FROM dl_per_location_cleaned
@@ -606,7 +562,6 @@ last180d_down_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -614,14 +569,13 @@ last180d_down_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
     MAX(mbps) AS MAX_download_Mbps
   FROM last180d_down
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d180_download AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_download_Mbps) AS d180_MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS d180_LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS d180_MED_download_Mbps,
@@ -630,7 +584,7 @@ d180_download AS (
     MAX(MAX_download_Mbps) AS d180_MAX_download_Mbps,
     STDDEV(MAX_download_Mbps) AS d180_STDEV_max_dl
   FROM last180d_down_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last180d_up AS (
   SELECT * FROM ul_per_location_cleaned
@@ -642,7 +596,6 @@ last180d_up_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -650,14 +603,13 @@ last180d_up_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
   FROM last180d_up
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d180_upload AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_upload_Mbps) AS d180_MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS d180_LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS d180_MED_upload_Mbps,
@@ -666,7 +618,7 @@ d180_upload AS (
     MAX(MAX_upload_Mbps) AS d180_MAX_upload_Mbps,
     STDDEV(MAX_upload_Mbps) AS d180_STDEV_max_ul
   FROM last180d_up_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last365d_down AS (
   SELECT * FROM dl_per_location_cleaned
@@ -678,7 +630,6 @@ last365d_down_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_download_Mbps,
@@ -686,14 +637,13 @@ last365d_down_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_download_Mbps,
     MAX(mbps) AS MAX_download_Mbps
   FROM last365d_down
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d365_download AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_download_Mbps) AS d365_MIN_download_Mbps,
     APPROX_QUANTILES(LOWER_QUART_download_Mbps, 100) [SAFE_ORDINAL(25)] AS d365_LOWER_QUART_download_Mbps,
     APPROX_QUANTILES(MED_download_Mbps, 100) [SAFE_ORDINAL(50)] AS d365_MED_download_Mbps,
@@ -702,7 +652,7 @@ d365_download AS (
     MAX(MAX_download_Mbps) AS d365_MAX_download_Mbps,
     STDDEV(MAX_download_Mbps) AS d365_STDEV_max_dl
   FROM last365d_down_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 ),
 last365d_up AS (
   SELECT * FROM ul_per_location_cleaned
@@ -714,7 +664,6 @@ last365d_up_per_ip AS (
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(mbps) AS MIN_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(25)] AS LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(50)] AS MED_upload_Mbps,
@@ -722,14 +671,13 @@ last365d_up_per_ip AS (
     APPROX_QUANTILES(mbps, 100) [SAFE_ORDINAL(75)] AS UPPER_QUART_upload_Mbps,
     MAX(mbps) AS MAX_upload_Mbps
   FROM last365d_up
-  GROUP BY test_date, continent_code, country_code, country_name, ISO3166_2region1, ip
+  GROUP BY test_date, continent_code, country_code, country_name, ip
 ),
 d365_upload AS (
   SELECT 
     continent_code,
     country_code,
     country_name,
-    ISO3166_2region1,
     MIN(MIN_upload_Mbps) AS d365_MIN_upload_Mbps,
     APPROX_QUANTILES(LOWER_QUART_upload_Mbps, 100) [SAFE_ORDINAL(25)] AS d365_LOWER_QUART_upload_Mbps,
     APPROX_QUANTILES(MED_upload_Mbps, 100) [SAFE_ORDINAL(50)] AS d365_MED_upload_Mbps,
@@ -738,25 +686,25 @@ d365_upload AS (
     MAX(MAX_upload_Mbps) AS d365_MAX_upload_Mbps,
     STDDEV(MAX_upload_Mbps) AS d365_STDEV_max_ul
   FROM last365d_up_per_ip
-  GROUP BY continent_code, country_code, country_name, ISO3166_2region1
+  GROUP BY continent_code, country_code, country_name
 )
 # Show the results
 SELECT * FROM dl_histogram
-JOIN ul_histogram USING (test_date, continent_code, country_code, country_name, ISO3166_2region1, bucket_min, bucket_max)
-JOIN dl_stats_per_day USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
-JOIN dl_total_samples_per_geo USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
-JOIN ul_stats_per_day USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
-JOIN ul_total_samples_per_geo USING (test_date, continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d7_download USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d7_upload USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d30_download USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d30_upload USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d60_download USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d60_upload USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d90_download USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d90_upload USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d180_download USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d180_upload USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d365_download USING (continent_code, country_code, country_name, ISO3166_2region1)
-JOIN d365_upload USING (continent_code, country_code, country_name, ISO3166_2region1)
-ORDER BY test_date, continent_code, country_code, country_name, ISO3166_2region1, bucket_min, bucket_max
+JOIN ul_histogram USING (test_date, continent_code, country_code, country_name, bucket_min, bucket_max)
+JOIN dl_stats_per_day USING (test_date, continent_code, country_code, country_name)
+JOIN dl_total_samples_per_geo USING (test_date, continent_code, country_code, country_name)
+JOIN ul_stats_per_day USING (test_date, continent_code, country_code, country_name)
+JOIN ul_total_samples_per_geo USING (test_date, continent_code, country_code, country_name)
+JOIN d7_download USING (continent_code, country_code, country_name)
+JOIN d7_upload USING (continent_code, country_code, country_name)
+JOIN d30_download USING (continent_code, country_code, country_name)
+JOIN d30_upload USING (continent_code, country_code, country_name)
+JOIN d60_download USING (continent_code, country_code, country_name)
+JOIN d60_upload USING (continent_code, country_code, country_name)
+JOIN d90_download USING (continent_code, country_code, country_name)
+JOIN d90_upload USING (continent_code, country_code, country_name)
+JOIN d180_download USING (continent_code, country_code, country_name)
+JOIN d180_upload USING (continent_code, country_code, country_name)
+JOIN d365_download USING (continent_code, country_code, country_name)
+JOIN d365_upload USING (continent_code, country_code, country_name)
+ORDER BY test_date, continent_code, country_code, country_name, bucket_min, bucket_max
