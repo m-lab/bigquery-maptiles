@@ -226,7 +226,7 @@ dl_sample_counts AS (
 # Generate equal sized buckets in log-space
 buckets AS (
   SELECT POW(10,x) AS bucket_right, POW(10, x-.2) AS bucket_left
-  FROM UNNEST(GENERATE_ARRAY(0, 3, .2)) AS x
+  FROM UNNEST(GENERATE_ARRAY(0, 4.2, .2)) AS x
 ),
 # Count the samples that fall into each bucket
 dl_histogram_counts AS (
