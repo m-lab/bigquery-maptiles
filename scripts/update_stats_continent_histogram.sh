@@ -93,14 +93,14 @@ for val in ${query_jobs[@]}; do
 
     JOB_ID2=$(bq --format=csv --project_id "${PROJECT}" query \
     --use_legacy_sql=false --max_rows=4000000 \
-    "$(cat "queries/${QUERY2}")" > codes.csv ) 
+    "$(cat "queries/${QUERY2}")" > continent_codes.csv ) 
   done
 
   # bq exports csvs with a header. remove the header.
-  sed -i '1d' codes.csv
+  sed -i '1d' continent_codes.csv
 
   # Make a temporary GCS bucket to store results.
-  gsutil mb gs://temp_generate_stats
+  gsutil mb gs://temp_generate_stats_continent_histogram
 
   # Grab the stats generated in bulk above, by year
   for year in "${year_range[@]}"; do
@@ -113,7 +113,7 @@ for val in ${query_jobs[@]}; do
       JOB_ID3=$(bq --nosync query \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
       --destination_table "mlab_statistics.temp_continent_stats" \
-      --replace "SELECT * FROM \`mlab_statistics.continent_histogram\` WHERE continent_code = \"${continent}\ AND test_date LIKE \"${year}%\" ORDER BY test_date, continent_code, bucket_min, bucket_max, frac, samples")
+      --replace "SELECT * FROM \`mlab_statistics.continent_histogram\` WHERE continent_code = \"${continent}\" AND test_date LIKE \"${year}%\" ORDER BY test_date, continent_code, bucket_min, bucket_max, frac, samples")
 
       JOB_ID3="${JOB_ID3#Successfully started query }"
 
@@ -125,14 +125,14 @@ for val in ${query_jobs[@]}; do
       # Extract the rows to JSON and/or other output formats      
       bq extract --destination_format NEWLINE_DELIMITED_JSON \
         mlab_statistics.temp_continent_country_region_stats \
-        gs://temp_generate_stats/${continent}/${year}/histogram_daily_stats.json      
+        gs://temp_generate_stats_continent_histogram/${continent}/${year}/histogram_daily_stats.json      
 
-    done < codes.csv
+    done < continent_codes.csv
 
   done
 
   # Copy the full list of generated stats from measurement-lab project temp GCS bucket
-  gsutil -m cp -r gs://temp_generate_stats ./tmp/
+  gsutil -m cp -r gs://temp_generate_stats_continent_histogram ./tmp/
 
   # Change to production project and copy generated stats to the public bucket.
   gcloud config set project mlab-oti
@@ -150,7 +150,7 @@ done
 
 # Cleanup 
 ## Remove the temporary GCS bucket.
-gsutil rm -r gs://temp_generate_stats
+gsutil rm -r gs://temp_generate_stats_continent_histogram
 
 ## Remove local copies.
 rm -r ./tmp/*
