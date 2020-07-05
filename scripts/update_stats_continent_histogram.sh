@@ -42,8 +42,8 @@ declare -a query_jobs=("continent_histogram")
 #endday=$(date -I -d "$today - 2 day")
 
 ### option 2
-startday=2019-12-01
-endday=2020-01-31
+startday=2019-12-25
+endday=2020-01-05
 #########################
 
 # Set the start and end year so we can group output by year
@@ -113,7 +113,7 @@ for val in ${query_jobs[@]}; do
       JOB_ID3=$(bq --nosync query \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
       --destination_table "mlab_statistics.temp_continent_stats" \
-      --replace "SELECT * FROM \`mlab_statistics.continent_histogram\` WHERE continent_code = \"${continent}\" AND test_date LIKE \"${year}%\" ORDER BY test_date, continent_code, bucket_min, bucket_max, frac, samples")
+      --replace "SELECT * FROM \`mlab_statistics.continent_histogram\` WHERE continent_code = \"${continent}\" AND CAST(test_date AS STRING) LIKE \"${year}%\" ORDER BY test_date, continent_code, bucket_min, bucket_max")
 
       JOB_ID3="${JOB_ID3#Successfully started query }"
 
