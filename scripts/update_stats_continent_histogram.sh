@@ -133,7 +133,7 @@ for val in ${query_jobs[@]}; do
   done
 
   # Copy the full list of generated stats from measurement-lab project temp GCS bucket
-  gsutil -m cp -r gs://temp_generate_stats_continent_histogram ./tmp/
+  gsutil -m cp -r gs://temp_generate_stats_continent_histogram/* ./tmp/
 
   # Change to production project and copy generated stats to the public bucket.
   gcloud config set project mlab-oti
@@ -155,3 +155,4 @@ gsutil rm -r gs://temp_generate_stats_continent_histogram
 
 ## Remove local copies.
 rm -r ./tmp/*
+rm continent_codes.csv
