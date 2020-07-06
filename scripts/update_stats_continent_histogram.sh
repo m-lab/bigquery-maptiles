@@ -107,10 +107,8 @@ for val in ${query_jobs[@]}; do
   for year in "${year_range[@]}"; do
 
     # Loop through the csv lines, using three values as query parameters for a series of queries.
-    while IFS=, read -r continent country region;
+    while IFS=, read -r continent;
     do  
-      iso_region="$country-$region"
-
       JOB_ID3=$(bq --nosync query \
       --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
       --destination_table "mlab_statistics.temp_continent_stats" \
