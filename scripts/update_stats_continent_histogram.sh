@@ -51,6 +51,7 @@ startarray=($(echo $startday | tr "-" "\n"))
 startyear=${startarray[0]}
 endarray=($(echo $endday | tr "-" "\n"))
 endyear=${endarray[0]}
+endyear=$((endyear+1))
 
 year_range=()
 while [ "$startyear" != "$endyear" ]; do
