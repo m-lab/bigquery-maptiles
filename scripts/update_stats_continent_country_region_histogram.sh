@@ -22,8 +22,52 @@ gcloud config set project measurement-lab
 
 declare -a query_jobs=("continent_country_region_histogram")
 
-startday=2020-01-01
-endday=2020-06-23
+#########################
+# Set date parameters for this run.  
+# Two options: - Check the exising table for the last date in the table
+#              - Set specific start & end dates
+#
+#   Comment out the option you don't want to use
+
+### option 1
+#today=($(date +"%Y-%m-%d"))
+
+# Get the last date in the appropriate stats table from the last run.
+#JOB_ID0=$(bq --format=json --nosync --project_id "${PROJECT}" query \
+#  "SELECT test_date FROM \`measurement-lab.mlab_statistics.continent_histogram\` WHERE test_date <= \"${continent}\" ORDER BY test_date DESC LIMIT 1") > lastdate.json
+
+#JOB_ID0="${JOB_ID0#Successfully started query }"
+
+#until [ DONE == $(bq --format json show --job "${JOB_ID0}" | jq -r '.status.state') ]
+#do
+#  sleep 30
+#done
+
+#lastday=($(jq .[].test_date lastdate.json))
+
+# Set startday to +1 day from last date
+#startday=$(date -I -d "$lastday + 1 day")
+
+# Set end day to -2 day from today
+#endday=$(date -I -d "$today - 2 day")
+
+### option 2
+startday=2019-12-25
+endday=2020-01-05
+#########################
+
+# Set the start and end year so we can group output by year
+startarray=($(echo $startday | tr "-" "\n"))
+startyear=${startarray[0]}
+endarray=($(echo $endday | tr "-" "\n"))
+endyear=${endarray[0]}
+endyear=$((endyear+1))
+
+year_range=()
+while [ "$startyear" != "$endyear" ]; do
+  year_range+=(${startyear})
+  startyear=$((startyear+1))
+done
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
@@ -64,43 +108,44 @@ for val in ${query_jobs[@]}; do
 
     JOB_ID2=$(bq --format=csv --project_id "${PROJECT}" query \
     --use_legacy_sql=false --max_rows=4000000 \
-    "$(cat "queries/${QUERY2}")" > codes.csv ) 
+    "$(cat "queries/${QUERY2}")" > continent_country_region_codes.csv ) 
   done
 
   # bq exports csvs with a header. remove the header.
-  sed -i '1d' codes.csv
+  sed -i '1d' continent_country_region_codes.csv
 
   # Make a temporary GCS bucket to store results.
-  gsutil mb gs://temp_generate_stats
+  gsutil mb gs://temp_stats_continent_country_region
 
-  # Loop through the csv lines, using three values as query parameters for a series of queries.
-  while IFS=, read -r continent country region;
-  do  
-    #QUERY3="export_continent_country_region_stats.sql"
+  # Grab the stats generated in bulk above, by year
+  for year in "${year_range[@]}"; do
 
-    iso_region="$country-$region"
+    # Loop through the csv lines, using three values as query parameters for a series of queries.
+    while IFS=, read -r continent country region;
+    do  
+      iso_region="$country-$region"
 
-    JOB_ID3=$(bq --nosync query \
-    --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
-    --destination_table "mlab_statistics.temp_continent_country_region_stats" \
-    --replace "SELECT * FROM \`mlab_statistics.continent_country_region_histogram\` WHERE continent_code = \"${continent}\" AND country_code = \"${country}\" AND ISO3166_2region1 = \"${iso_region}\" ORDER BY test_date, continent_code, county_code, country_name, ISO3166_2region1, bucket_min, bucket_max, frac, samples")
+      JOB_ID3=$(bq --nosync query \
+      --use_legacy_sql=false --max_rows=4000000 --allow_large_results \
+      --destination_table "mlab_statistics.temp_continent_country_region_stats" \
+      --replace "SELECT * FROM \`mlab_statistics.continent_country_region_histogram\` WHERE continent_code = \"${continent}\" AND country_code = \"${country}\" AND ISO3166_2region1 = \"${iso_region}\" ORDER BY test_date, continent_code, county_code, country_name, ISO3166_2region1, bucket_min, bucket_max, frac, samples")
 
-    JOB_ID3="${JOB_ID3#Successfully started query }"
+      JOB_ID3="${JOB_ID3#Successfully started query }"
 
-    until [ DONE == $(bq --format json show --job "${JOB_ID3}" | jq -r '.status.state') ]
-    do
-      sleep 30
-    done
+      until [ DONE == $(bq --format json show --job "${JOB_ID3}" | jq -r '.status.state') ]
+      do
+        sleep 30
+      done
 
-    # Extract the rows to JSON and/or other output formats      
-    bq extract --destination_format NEWLINE_DELIMITED_JSON \
-      mlab_statistics.temp_continent_country_region_stats \
-      gs://temp_generate_stats/${continent}/${country}/${region}/histogram_daily_stats.json      
+      # Extract the rows to JSON and/or other output formats      
+      bq extract --destination_format NEWLINE_DELIMITED_JSON \
+        mlab_statistics.temp_continent_country_region_stats \
+        gs://temp_stats_continent_country_region/${continent}/${country}/${region}/histogram_daily_stats.json      
 
-  done < codes.csv
+    done < continent_country_region_codes.csv
 
   # Copy the full list of generated stats from measurement-lab project temp GCS bucket
-  gsutil -m cp -r gs://temp_generate_stats ./tmp/
+  gsutil -m cp -r gs://temp_stats_continent_country_region/* ./tmp/
 
   # Change to production project and copy generated stats to the public bucket.
   gcloud config set project mlab-oti
@@ -118,7 +163,8 @@ done
 
 # Cleanup 
 ## Remove the temporary GCS bucket.
-gsutil rm -r gs://temp_generate_stats
+gsutil rm -r gs://temp_stats_continent_country_region
 
 ## Remove local copies.
 rm -r ./tmp/*
+rm continent_country_region_codes.csv
