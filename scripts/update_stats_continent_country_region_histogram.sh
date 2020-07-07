@@ -159,6 +159,8 @@ for val in ${query_jobs[@]}; do
 
     done < continent_country_region_codes.csv
 
+  done
+  
   # Copy the full list of generated stats from measurement-lab project temp GCS bucket
   gsutil -m cp -r gs://temp_stats_continent_country_region/* ./tmp/
 
