@@ -155,12 +155,12 @@ for val in ${query_jobs[@]}; do
       # Extract the rows to JSON and/or other output formats      
       bq extract --destination_format NEWLINE_DELIMITED_JSON \
         mlab_statistics.temp_continent_country_region_stats \
-        gs://temp_stats_continent_country_region/${continent}/${country}/${region}/histogram_daily_stats.json      
+        gs://temp_stats_continent_country_region/${continent}/${country}/${region}/${year}/histogram_daily_stats.json      
 
     done < continent_country_region_codes.csv
 
   done
-  
+
   # Copy the full list of generated stats from measurement-lab project temp GCS bucket
   gsutil -m cp -r gs://temp_stats_continent_country_region/* ./tmp/
 

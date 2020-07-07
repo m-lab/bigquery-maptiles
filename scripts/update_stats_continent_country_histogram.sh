@@ -73,9 +73,11 @@ endyear=${endarray[0]}
 endyear=$((endyear+1))
 
 year_range=()
+year_range+=(${startyear})
+
 while [ "$startyear" != "$endyear" ]; do
-  year_range+=(${startyear})
   startyear=$((startyear+1))
+  year_range+=(${startyear})
 done
 
 for val in ${query_jobs[@]}; do
@@ -146,7 +148,7 @@ for val in ${query_jobs[@]}; do
         mlab_statistics.temp_continent_country_stats \
         gs://temp_generate_stats/${continent}/${country}/${year}/histogram_daily_stats.json      
 
-    done < codes.csv
+    done < continent_country_codes.csv
 
   done
 
@@ -173,4 +175,4 @@ gsutil rm -r gs://temp_stats_continent_country
 
 ## Remove local copies.
 rm -r ./tmp/*
-rm continent_codes.csv
+rm continent_country_codes.csv
