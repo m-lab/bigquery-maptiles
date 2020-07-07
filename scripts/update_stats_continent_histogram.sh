@@ -1,6 +1,4 @@
 #!/bin/bash
-#
-
 set -eux
 
 PROJECT="measurement-lab"
@@ -20,11 +18,12 @@ declare -a query_jobs=("continent_histogram")
 #   Comment out the option you don't want to use
 
 ### option 1
-#today=($(date +"%Y-%m-%d"))
+#today=($(TZ=GMT date +"%Y-%m-%d"))
+#sixmonths=$(TZ=GMT date -I -d "$today - 6 month")
 
 # Get the last date in the appropriate stats table from the last run.
 #JOB_ID0=$(bq --format=json --nosync --project_id "${PROJECT}" query \
-#  "SELECT test_date FROM \`measurement-lab.mlab_statistics.continent_histogram\` WHERE test_date <= \"${continent}\" ORDER BY test_date DESC LIMIT 1") > lastdate.json
+#  "SELECT test_date FROM \`measurement-lab.mlab_statistics.continent_histogram\` WHERE test_date >= \"${sixmonths}\" ORDER BY test_date DESC LIMIT 1") > lastdate.json
 
 #JOB_ID0="${JOB_ID0#Successfully started query }"
 
@@ -35,11 +34,31 @@ declare -a query_jobs=("continent_histogram")
 
 #lastday=($(jq .[].test_date lastdate.json))
 
-# Set startday to +1 day from last date
-#startday=$(date -I -d "$lastday + 1 day")
+# Set startday to -2 days from last date.
+#   This ensures we've got all data from that day, as previous runs may have missed 
+#   tests that hadn't been pushed or were reprocessed since the last time.
+#
+#startday=$(TZ=GMT date -I -d "$lastday - 2 day")
 
-# Set end day to -2 day from today
-#endday=$(date -I -d "$today - 2 day")
+# Set end day to -4 days from today. 
+#   This ensures we're processing days where ETL has likely published most test data already.
+#
+#endday=$(TZ=GMT date -I -d "$today - 4 day")
+
+## When running option 1, automatic date selection:
+#     - first we'll delete any data between startday and endday
+#     - this ensures we are reprocessing all recent days to account for test rows 
+#       that might have been added since the last run by pusher or re-processed by gardener
+
+#JOB_ID1=$(bq --nosync --project_id "${PROJECT}" query \
+#  --use_legacy_sql=false "DELETE FROM \`measurement-lab.mlab_statistics.continent_histogram\` WHERE test_date BETWEEN \"${startday}\" AND \"${endday}\"")
+
+#JOB_ID1="${JOB_ID1#Successfully started query }"
+
+#until [ DONE == $(bq --format json show --job "${JOB_ID1}" | jq -r '.status.state') ]
+#do
+#  sleep 30
+#done
 
 ### option 2
 startday=2019-12-25
@@ -80,7 +99,7 @@ for val in ${query_jobs[@]}; do
       sleep 30
     done
 
-    startday=$(date -I -d "$startday + 1 day")
+    startday=$(TZ=GMT date -I -d "$startday + 1 day")
   done
 
   # Automate stats and outputs by continent, country, region, etc. using query params.

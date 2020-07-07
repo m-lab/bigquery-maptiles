@@ -1,16 +1,4 @@
 #!/bin/bash
-
-# The purpose of this script is to run queries to provide static statistics by:
-#   * test_geography_timePeriod - for example: `ndt_us_aiannh_month`
-#                                     - NDT test results
-#                                     - US American Indian, Alaska Native Corps, & Hawaiian Homelands
-#                                     - aggregated by month
-#
-# This script will run the queries and save the results in:
-#   `measurement-lab.mlab_statistics.<table name>`
-#
-# Use this script for jobs that do not result in maptiles, only statistics.
-#
 set -eux
 
 PROJECT="measurement-lab"
@@ -22,7 +10,7 @@ gcloud config set project measurement-lab
 
 declare -a query_jobs=("continent_country_histogram")
 
-#########################
+##########################
 # Set date parameters for this run.  
 # Two options: - Check the exising table for the last date in the table
 #              - Set specific start & end dates
@@ -30,11 +18,12 @@ declare -a query_jobs=("continent_country_histogram")
 #   Comment out the option you don't want to use
 
 ### option 1
-#today=($(date +"%Y-%m-%d"))
+#today=($(TZ=GMT date +"%Y-%m-%d"))
+#sixmonths=$(TZ=GMT date -I -d "$today - 6 month")
 
 # Get the last date in the appropriate stats table from the last run.
 #JOB_ID0=$(bq --format=json --nosync --project_id "${PROJECT}" query \
-#  "SELECT test_date FROM \`measurement-lab.mlab_statistics.continent_histogram\` WHERE test_date <= \"${continent}\" ORDER BY test_date DESC LIMIT 1") > lastdate.json
+#  "SELECT test_date FROM \`measurement-lab.mlab_statistics.continent_country_histogram\` WHERE test_date >= \"${sixmonths}\" ORDER BY test_date DESC LIMIT 1") > lastdate.json
 
 #JOB_ID0="${JOB_ID0#Successfully started query }"
 
@@ -45,11 +34,31 @@ declare -a query_jobs=("continent_country_histogram")
 
 #lastday=($(jq .[].test_date lastdate.json))
 
-# Set startday to +1 day from last date
-#startday=$(date -I -d "$lastday + 1 day")
+# Set startday to -2 days from last date.
+#   This ensures we've got all data from that day, as previous runs may have missed 
+#   tests that hadn't been pushed or were reprocessed since the last time.
+#
+#startday=$(TZ=GMT date -I -d "$lastday - 2 day")
 
-# Set end day to -2 day from today
-#endday=$(date -I -d "$today - 2 day")
+# Set end day to -4 days from today. 
+#   This ensures we're processing days where ETL has likely published most test data already.
+#
+#endday=$(TZ=GMT date -I -d "$today - 4 day")
+
+## When running option 1, automatic date selection:
+#     - first we'll delete any data between startday and endday
+#     - this ensures we are reprocessing all recent days to account for test rows 
+#       that might have been added since the last run by pusher or re-processed by gardener
+
+#JOB_ID1=$(bq --nosync --project_id "${PROJECT}" query \
+#  --use_legacy_sql=false "DELETE FROM \`measurement-lab.mlab_statistics.continent_country_histogram\` WHERE test_date BETWEEN \"${startday}\" AND \"${endday}\"")
+
+#JOB_ID1="${JOB_ID1#Successfully started query }"
+
+#until [ DONE == $(bq --format json show --job "${JOB_ID1}" | jq -r '.status.state') ]
+#do
+#  sleep 30
+#done
 
 ### option 2
 startday=2019-12-25
