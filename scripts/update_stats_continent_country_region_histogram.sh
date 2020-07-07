@@ -62,8 +62,8 @@ declare -a query_jobs=("continent_country_region_histogram")
 
 
 ### option 2
-startday=2019-12-25
-endday=2020-01-05
+startday=2019-01-01
+endday=2019-12-31
 #########################
 
 # Set the start and end year so we can group output by year
@@ -74,10 +74,15 @@ endyear=${endarray[0]}
 endyear=$((endyear+1))
 
 year_range=()
-while [ "$startyear" != "$endyear" ]; do
-  year_range+=(${startyear})
-  startyear=$((startyear+1))
-done
+year_range+=(${startyear})
+
+if [ "$startyear" != "$endyear" ]
+then 
+  while [ "$startyear" != "$endyear" ]; do
+    startyear=$((startyear+1))
+    year_range+=(${startyear})
+  done
+fi
 
 for val in ${query_jobs[@]}; do
   RESULT_NAME="$val"
